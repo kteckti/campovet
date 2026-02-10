@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GERENTE
+  FINANCEIRO
+  FUNCIONARIO
+  RECEPCAO
+}
+
+// === MODELS ===
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  document    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  modules     TenantModule[]
+  
+  // Dados Módulo Creche
+  customers   Customer[]
+  pets        Pet[]
+  kennels     Kennel[]
+  bookings    Booking[]
+
+  services Service[]
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  role        Role   @default(FUNCIONARIO) // GERENTE, FINANCEIRO, FUNCIONARIO, RECEPCAO
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Module {
+  id          String   @id
+  name        String
+  description String?
+  price       Decimal  @default(0.0)
+
+  tenants     TenantModule[]
+}
+
+model TenantModule {
+  id        String   @id @default(cuid())
+  tenantId  String
+  moduleId  String
+  isActive  Boolean  @default(true)
+  expiresAt DateTime?
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  module    Module   @relation(fields: [moduleId], references: [id])
+
+  @@unique([tenantId, moduleId])
+}
+
+// === ENTIDADES DO MÓDULO GERAL E CRECHE ===
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  
+  email       String?
+  phone       String?
+  address     String?
+  cpf         String?
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  pets        Pet[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Pet {
+  id          String   @id @default(cuid())
+  name        String
+  species     String
+  breed       String?
+  weight      Float?
+  birthDate   DateTime?
+  
+  // NOVOS CAMPOS DE SAÚDE
+  allergies   String?  // Ex: "Alergia a Frango"
+  foodRestrictions String? // Ex: "Ração Hipoalergênica apenas"
+  vetName     String?  // Nome do Veterinário externo
+  vetPhone    String?  // Telefone do Vet
+  notes       String?  // Observações gerais de comportamento
+
+  ownerId     String
+  owner       Customer @relation(fields: [ownerId], references: [id])
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  bookings    Booking[]
+  medications PetMedication[] // Relação com remédios
+  logs        PetLog[]        // Relação com histórico
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PetMedication {
+  id          String   @id @default(cuid())
+  name        String   // Ex: "Apoquel"
+  dosage      String   // Ex: "1/2 comprimido"
+  frequency   String   // Ex: "A cada 12h"
+  startDate   DateTime?
+  endDate     DateTime?
+  active      Boolean  @default(true)
+
+  petId       String
+  pet         Pet      @relation(fields: [petId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+// NOVO MODEL: Diário de Bordo (Logs)
+model PetLog {
+  id          String   @id @default(cuid())
+  type        String   // FOOD, MEDICINE, EXERCISE, HEALTH, OBSERVATION
+  description String   // "Comeu tudo", "Tomou remédio", "Vomitou"
+  date        DateTime @default(now())
+  performedBy String?
+
+  petId       String
+  pet         Pet      @relation(fields: [petId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Kennel {
+  id          String      @id @default(cuid())
+  name        String
+  
+  // ADICIONE ESTE CAMPO NOVO:
+  size        String?     // Tamanho (P, M, G)
+  dailyRate   Decimal     @default(0.0) @db.Decimal(10, 2)
+
+  status      String      @default("AVAILABLE") 
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  bookings    Booking[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  capacity    Int      @default(1)
+}
+
+model Booking {
+  id          String    @id @default(cuid())
+  
+  startDate   DateTime  @default(now()) // Hora que entrou
+  endDate     DateTime? // Hora que saiu (Null = ainda está lá)
+  status      String    @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+
+  totalCost   Decimal?  @db.Decimal(10, 2)
+  
+  petId       String
+  pet         Pet       @relation(fields: [petId], references: [id])
+  
+  kennelId    String
+  kennel      Kennel    @relation(fields: [kennelId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  services    BookingService[]
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String   // Ex: "Banho", "Tosa"
+  price       Decimal  @db.Decimal(10, 2)
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  bookingServices BookingService[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BookingService {
+  id          String   @id @default(cuid())
+  price       Decimal  @db.Decimal(10, 2) // Salva o preço no momento da adição
+  createdAt   DateTime @default(now())
+
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+  
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+}
+
+// FINANCEIRO
+model Transaction {
+  id          String   @id @default(cuid())
+  type        String   // "INCOME" (Receita) ou "EXPENSE" (Despesa)
+  amount      Decimal  @db.Decimal(10, 2)
+  description String
+  date        DateTime @default(now())
+  
+  module      String   @default("CRECHE") // "CRECHE", "CLINICA", "GERAL"
+  method      String   @default("PIX") // "PIX", "CREDITO", "DEBITO", "DINHEIRO"
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  // Opcional: para saber de qual reserva veio esse dinheiro
+  bookingId   String?  
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
