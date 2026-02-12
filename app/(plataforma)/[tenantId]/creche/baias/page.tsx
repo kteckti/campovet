@@ -41,7 +41,8 @@ export default async function BaiasPage({ params }: PageProps) {
   // 4. Buscar Pets para o Select (Lista Geral)
   const pets = await db.pet.findMany({
     where: { tenant: { slug: tenantId } },
-    orderBy: { name: 'asc' },
+    orderBy: { createdAt: 'desc' }, // Ordena por data de criação
+    take: 5, // Pega só 5
     include: { owner: true }
   })
 
@@ -55,7 +56,7 @@ export default async function BaiasPage({ params }: PageProps) {
 
         {/* CONTAINER DE BOTÕES DE NAVEGAÇÃO */}
         <div className="flex gap-3">
-          
+
           <Link href={`/${tenantId}/creche/historico`} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium">
             <History size={18} /> Histórico
           </Link>

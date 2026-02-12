@@ -26,6 +26,8 @@ model Tenant {
 
   users       User[]
   modules     TenantModule[]
+
+  transactions Transaction[]
   
   // Dados Módulo Creche
   customers   Customer[]
@@ -168,6 +170,8 @@ model Booking {
   status      String    @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
 
   totalCost   Decimal?  @db.Decimal(10, 2)
+  
+  transactions Transaction[]
   
   petId       String
   pet         Pet       @relation(fields: [petId], references: [id])

@@ -225,8 +225,28 @@ export async function checkInPet(tenantId: string, formData: FormData) {
   revalidatePath(`/${tenantId}/creche/baias`)
 }
 
-export async function checkOutPet(bookingId: string, kennelId: string, tenantId: string) {
-  // 1. Buscar dados INCLUINDO OS SERVIÇOS CONSUMIDOS
+export async function checkOutPet(tenantId: string, formData: FormData) {
+  // Captura IDs ocultos no formulário
+  const bookingId = formData.get("bookingId") as string
+  const kennelId = formData.get("kennelId") as string
+  
+  // 1. Captura os dados de pagamento escolhidos
+  const paymentType = formData.get("paymentType") as string // PIX, MONEY, DEBIT, CREDIT
+  const installments = formData.get("installments") as string // 1, 2, 3...
+
+  // 2. Formata a string do método para ficar legível no Financeiro
+  let paymentMethodFormatted = paymentType
+  if (paymentType === "CREDIT") {
+    paymentMethodFormatted = `Crédito (${installments}x)`
+  } else if (paymentType === "DEBIT") {
+    paymentMethodFormatted = "Débito"
+  } else if (paymentType === "MONEY") {
+    paymentMethodFormatted = "Dinheiro"
+  } else {
+    paymentMethodFormatted = "PIX"
+  }
+
+  // 3. Buscar dados da reserva
   const booking = await db.booking.findUnique({
     where: { id: bookingId },
     include: { 
@@ -237,7 +257,7 @@ export async function checkOutPet(bookingId: string, kennelId: string, tenantId:
 
   if (!booking) throw new Error("Reserva não encontrada")
 
-  // 2. Calcular Diárias
+  // 4. Calcular Diárias
   const endDate = new Date()
   const startDate = new Date(booking.startDate)
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
@@ -246,13 +266,13 @@ export async function checkOutPet(bookingId: string, kennelId: string, tenantId:
 
   const dailyTotal = daysToCharge * Number(booking.kennel.dailyRate)
 
-  // 3. Calcular Serviços Extras
+  // 5. Calcular Serviços Extras
   const servicesTotal = booking.services.reduce((acc, item) => acc + Number(item.price), 0)
 
-  // 4. Total Final
+  // 6. Total Final
   const finalTotal = dailyTotal + servicesTotal
 
-  // 5. Salvar e Finalizar ESTE Booking específico
+  // 7. Salvar e Finalizar ESTE Booking específico
   await db.booking.update({
     where: { id: bookingId },
     data: {
@@ -262,8 +282,20 @@ export async function checkOutPet(bookingId: string, kennelId: string, tenantId:
     }
   })
 
-  // === 6. NOVA LÓGICA DE CAPACIDADE ===
-  // Verifica se sobrou algum animal na baia (status ACTIVE)
+  // 8. LANÇAR NO CAIXA (FINANCEIRO) COM O MÉTODO CORRETO
+  await db.transaction.create({
+    data: {
+      type: "INCOME",
+      amount: finalTotal,
+      description: `Hospedagem - Protocolo #${bookingId.slice(-6).toUpperCase()}`,
+      module: "CRECHE",
+      method: paymentMethodFormatted, // <--- Aqui entra o método escolhido (ex: Crédito 3x)
+      tenant: { connect: { slug: tenantId } },
+      booking: { connect: { id: bookingId } }
+    }
+  })
+
+  // 9. LÓGICA DE CAPACIDADE (Libera baia se não houver mais pets)
   const remainingPets = await db.booking.count({
     where: {
       kennelId: kennelId,
@@ -271,25 +303,43 @@ export async function checkOutPet(bookingId: string, kennelId: string, tenantId:
     }
   })
 
-  // Se não sobrou ninguém (0), libera a baia.
-  // Se sobrou (> 0), mantém como OCCUPIED.
   if (remainingPets === 0) {
     await db.kennel.update({
       where: { id: kennelId },
       data: { status: "AVAILABLE" }
     })
   } else {
-    // Garante que continua ocupada (caso estivesse em outro estado por erro)
+    // Garante que continua ocupada
     await db.kennel.update({
       where: { id: kennelId },
       data: { status: "OCCUPIED" }
     })
   }
 
-  // 7. Redirecionar para o relatório financeiro
+  // 10. Redirecionar para o relatório financeiro
   redirect(`/${tenantId}/creche/checkout/${bookingId}`)
 }
 
+export async function searchPets(query: string, tenantId: string) {
+  // Se não tiver busca, retorna vazio (ou os recentes, se preferir tratar no front)
+  if (!query) return []
+
+  const pets = await db.pet.findMany({
+    where: {
+      tenant: { slug: tenantId },
+      name: { 
+        contains: query, 
+        mode: 'insensitive' // Ignora maiúsculas/minúsculas
+      },
+      // Opcional: não listar pets que já estão hospedados (status ACTIVE)
+      // bookings: { none: { status: "ACTIVE" } } 
+    },
+    take: 5, // Limita a 5 resultados na busca
+    include: { owner: true }
+  })
+  
+  return pets
+}
 export async function updateKennel(kennelId: string, tenantId: string, formData: FormData) {
   const name = formData.get("name") as string
   const size = formData.get("size") as string
