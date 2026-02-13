@@ -14,7 +14,67 @@ enum Role {
   RECEPCAO
 }
 
+// 2. Modelo de Agendamento
+model Appointment {
+  id          String   @id @default(cuid())
+  date        DateTime
+  reason      String
+  notes       String?
+  status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELED
+  
+  // === NOVOS CAMPOS FINANCEIROS ===
+  totalCost   Decimal? @db.Decimal(10, 2) // Valor cobrado
+  isPaid      Boolean  @default(false)      // Se já foi pago
+  paymentMethod String?                     // PIX, CREDITO, etc.
+  
+  petId       String
+  pet         Pet      @relation(fields: [petId], references: [id])
+  
+  veterinarianId String
+  veterinarian   User    @relation("VetAppointments", fields: [veterinarianId], references: [id])
+
+  services Service[]
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  medicalRecord MedicalRecord?
+  
+  // Relacionamento com a transação financeira gerada
+  transactions Transaction[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 3. Modelo de Prontuário Médico
+model MedicalRecord {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  
+  complaint   String   // Queixa principal (Anamnese)
+  diagnosis   String?  // Diagnóstico
+  prescription String? @db.Text // Receita / Prescrição
+  notes       String?  @db.Text // Exame físico / Detalhes
+
+  appointmentId String? @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+
+  petId       String
+  pet         Pet      @relation(fields: [petId], references: [id])
+
+  veterinarianId String
+  veterinarian   User    @relation("VetRecords", fields: [veterinarianId], references: [id])
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
 // === MODELS ===
+
+
 
 model Tenant {
   id          String   @id @default(cuid())
@@ -36,6 +96,10 @@ model Tenant {
   bookings    Booking[]
 
   services Service[]
+  products Product[]
+
+  appointments    Appointment[]
+  medicalRecords  MedicalRecord[]
 }
 
 model User {
@@ -47,6 +111,9 @@ model User {
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   createdAt   DateTime @default(now())
+
+  vetAppointments Appointment[] @relation("VetAppointments")
+  vetRecords      MedicalRecord[] @relation("VetRecords")
 }
 
 model Module {
@@ -103,6 +170,7 @@ model Pet {
   vetName     String?  // Nome do Veterinário externo
   vetPhone    String?  // Telefone do Vet
   notes       String?  // Observações gerais de comportamento
+  
 
   ownerId     String
   owner       Customer @relation(fields: [ownerId], references: [id])
@@ -115,6 +183,9 @@ model Pet {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  appointments    Appointment[]
+  medicalRecords  MedicalRecord[]
 }
 
 model PetMedication {
@@ -198,6 +269,8 @@ model Service {
   
   bookingServices BookingService[]
 
+  appointments Appointment[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -231,6 +304,29 @@ model Transaction {
   // Opcional: para saber de qual reserva veio esse dinheiro
   bookingId   String?  
   booking     Booking? @relation(fields: [bookingId], references: [id])
+
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  quantity    Int      @default(0)   // Quantidade atual
+  minStock    Int      @default(5)   // Estoque mínimo para alerta
+  
+  price       Decimal  @db.Decimal(10, 2) // Preço de Venda (se for vendido)
+  costPrice   Decimal? @db.Decimal(10, 2) // Custo (para relatório de lucro)
+  
+  unit        String   @default("UN") // UN, ML, KG, CX
+  expiryDate  DateTime? // Validade
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
