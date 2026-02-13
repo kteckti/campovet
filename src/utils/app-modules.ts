@@ -5,16 +5,16 @@ import {
   Beef, 
   Syringe, 
   Activity,
-  LayoutDashboard 
+  LayoutDashboard,
+  UserCheck,
+  ClipboardList
 } from "lucide-react"
 
 // Define como cada módulo aparece no menu
 export const MODULE_DEFINITIONS: Record<string, { label: string; icon: any; href: string }> = {
-  // Módulos do Banco de Dados
   mod_creche: { 
     label: "Creche & Hotel", 
     icon: Dog, 
-    // Mudei aqui: em vez de ir para /creche (que não existe), vai para /creche/tutores
     href: "/creche/baias" 
   },
   mod_clinica: { 
@@ -24,7 +24,7 @@ export const MODULE_DEFINITIONS: Record<string, { label: string; icon: any; href
   },
   mod_pet_sitter: { 
     label: "Pet Sitter", 
-    icon: Activity, 
+    icon: UserCheck, 
     href: "/pet-sitter" 
   },
   mod_leite: { 
@@ -38,11 +38,10 @@ export const MODULE_DEFINITIONS: Record<string, { label: string; icon: any; href
     href: "/gado-corte" 
   },
   mod_equinos: { 
-    label: "Equinos", 
-    icon: Activity, 
+    label: "Reprodução Equina", 
+    icon: ClipboardList, 
     href: "/equinos" 
   },
-  // Adicione outros conforme necessário
 }
 
 // Menu padrão que sempre aparece (Dashboard)
