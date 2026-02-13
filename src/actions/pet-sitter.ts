@@ -38,10 +38,13 @@ export async function createPetSitterAppointment(tenantId: string, formData: For
 
   const serviceValue = Number(service.price)
   
-  // Calcular custo de combustível (R$ 6,00 por litro, 10km/litro)
-  const fuelCostPerKm = 6.00 / 10 // R$ 0,60 por km
+  // Calcular custo de combustível (Ida e Volta)
+  // Gasolina: R$ 6,50 / Consumo: 6km/l = R$ 1,083 por KM
+  // Ida e Volta = Distância * 2
+  const fuelCostPerKm = 6.50 / 6 
   const distance = distanceKm ? parseFloat(distanceKm) : 0
-  const fuelCost = distance * fuelCostPerKm
+  const totalDistance = distance * 2 // Ida e Volta
+  const fuelCost = totalDistance * fuelCostPerKm
   const totalCost = serviceValue + fuelCost
 
   // Criar agendamento principal
@@ -76,7 +79,7 @@ export async function createPetSitterAppointment(tenantId: string, formData: For
       time,
       recurrencePattern,
       new Date(recurrenceEndDate),
-      distance,
+      distance, // Passa a distância original (1 via)
       fuelCost,
       serviceValue,
       totalCost,
