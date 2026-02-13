@@ -19,10 +19,14 @@ async function main() {
 
   console.log(`✅ Tenant: ${tenant.name}`)
 
-  // 2. Garantir que módulos existem (caso tenha limpado o banco)
+  // 2. Garantir que módulos existem
   const allModules = [
     { id: 'mod_creche', name: 'Creche Pet' },
-    { id: 'mod_clinica', name: 'Clínica Vet' }
+    { id: 'mod_clinica', name: 'Clínica Vet' },
+    { id: 'mod_pet_sitter', name: 'Pet Sitter' },
+    { id: 'mod_leite', name: 'Gado Leiteiro' },
+    { id: 'mod_corte', name: 'Gado de Corte' },
+    { id: 'mod_equinos', name: 'Reprodução Equina' }
   ]
   
   for (const m of allModules) {
@@ -34,7 +38,14 @@ async function main() {
   }
 
   // 3. Ativar Módulos para a Clínica
-  const modulesToActivate = ['mod_creche', 'mod_clinica']
+  const modulesToActivate = [
+    'mod_creche', 
+    'mod_clinica', 
+    'mod_pet_sitter', 
+    'mod_leite', 
+    'mod_corte', 
+    'mod_equinos'
+  ]
 
   for (const modId of modulesToActivate) {
     await prisma.tenantModule.upsert({
@@ -53,7 +64,7 @@ async function main() {
     })
   }
   
-  console.log(`✅ Módulos vinculados com sucesso!`)
+  console.log(`✅ Todos os módulos (incluindo Agro) vinculados com sucesso!`)
 }
 
 main()
