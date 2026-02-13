@@ -113,6 +113,9 @@ model Tenant {
   beefAnimals BeefAnimal[]
   beefLots BeefLot[]
   weighings Weighing[]
+
+  // Dados Módulo Pet Sitter
+  petSitterAppointments PetSitterAppointment[]
 }
 
 model User {
@@ -190,7 +193,8 @@ model Pet {
   
   bookings    Booking[]
   medications PetMedication[] 
-  logs        PetLog[]        
+  logs        PetLog[]
+  petSitterAppointments PetSitterAppointment[]        
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -275,6 +279,7 @@ model Service {
   bookingServices BookingService[]
 
   appointments Appointment[]
+  petSitterAppointments PetSitterAppointment[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -488,6 +493,9 @@ model Transaction {
   
   appointmentId String?
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  
+  petSitterAppointmentId String?
+  petSitterAppointment   PetSitterAppointment? @relation(fields: [petSitterAppointmentId], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -510,6 +518,49 @@ model Product {
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// === MÓDULO PET SITTER ===
+
+model PetSitterAppointment {
+  id          String   @id @default(cuid())
+  date        DateTime
+  time        String   // Horário da visita (ex: "14:30")
+  status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELED
+  
+  // Informações de localização e combustível
+  address     String?  // Endereço específico (se diferente do cadastro)
+  distanceKm  Decimal? @db.Decimal(10, 2) // Distância em KM
+  fuelCost    Decimal? @db.Decimal(10, 2) // Custo calculado de combustível
+  
+  // Recorrência
+  isRecurring Boolean  @default(false)
+  recurrencePattern String? // Ex: "WEEKLY_WED" (toda quarta), "WEEKLY_MON_FRI" (segunda e sexta)
+  recurrenceEndDate DateTime? // Data final da recorrência
+  parentAppointmentId String? // ID do agendamento pai (se for uma ocorrência de recorrência)
+  
+  // Financeiro
+  serviceValue Decimal  @db.Decimal(10, 2) // Valor do serviço
+  totalCost    Decimal  @db.Decimal(10, 2) // Valor total (serviço + combustível)
+  isPaid       Boolean  @default(false)
+  paymentMethod String? // PIX, CREDITO, DEBITO, DINHEIRO
+  
+  notes       String?  @db.Text // Observações e instruções
+  
+  // Relacionamentos
+  petId       String
+  pet         Pet      @relation(fields: [petId], references: [id])
+  
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  transactions Transaction[]
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
