@@ -19,6 +19,23 @@ export default async function FinanceiroPetSitterPage({ params }: PageProps) {
     return <div>Tenant não encontrado</div>
   }
 
+  // Verificação de segurança para o Prisma Client
+  if (!(db as any).petSitterAppointment) {
+    return (
+      <div className="p-8 text-center bg-red-50 border border-red-200 rounded-xl">
+        <h2 className="text-red-800 font-bold text-lg">Erro de Configuração</h2>
+        <p className="text-red-600 mt-2">
+          O modelo PetSitterAppointment não foi encontrado no banco de dados. 
+          Por favor, execute os comandos abaixo no seu terminal para atualizar o sistema:
+        </p>
+        <pre className="bg-slate-800 text-slate-100 p-4 rounded-lg mt-4 text-sm overflow-x-auto text-left">
+          npx prisma migrate dev --name add_pet_sitter_module{"\n"}
+          npx prisma generate
+        </pre>
+      </div>
+    )
+  }
+
   // Buscar todos os agendamentos
   const appointments = await db.petSitterAppointment.findMany({
     where: { tenantId: tenant.id },
