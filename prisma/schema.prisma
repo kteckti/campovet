@@ -93,6 +93,7 @@ model Tenant {
 
   users       User[]
   modules     TenantModule[]
+  paymentRequests PaymentRequest[]
 
   transactions Transaction[]
   
@@ -222,6 +223,20 @@ model TenantModule {
   module    Module   @relation(fields: [moduleId], references: [id])
 
   @@unique([tenantId, moduleId])
+}
+
+model PaymentRequest {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  amount      Decimal  @db.Decimal(10, 2)
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  requestedAt DateTime @default(now())
+  processedAt DateTime?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // === ENTIDADES DO MÓDULO GERAL E CRECHE ===

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { MODULE_DEFINITIONS, DEFAULT_MENU } from "@/src/utils/app-modules"
-import { Scissors, DollarSign, Users, LogOut } from "lucide-react"
+import { Scissors, DollarSign, Users, LogOut, ShieldCheck } from "lucide-react"
 import { useSession, signOut } from "next-auth/react"
 
 interface SidebarProps {
@@ -103,6 +103,30 @@ export function Sidebar({ tenantSlug, activeModules, className }: SidebarProps) 
               <span className="font-medium">Equipe & Acessos</span>
             </Link>
           </li>
+
+          {/* === ITEM ADICIONADO: PAGAMENTO === */}
+          <li>
+            <Link 
+              href={`/${tenantSlug}/pagamento`}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors text-slate-300 hover:text-white"
+            >
+              <DollarSign className="w-5 h-5" />
+              <span className="font-medium">Minha Assinatura</span>
+            </Link>
+          </li>
+
+          {/* === ITEM ADICIONADO: ADMIN PAGAMENTOS (Apenas para o Admin Central) === */}
+          {user?.email === "admin@campovet.com" && (
+            <li>
+              <Link 
+                href={`/${tenantSlug}/admin/pagamentos`}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 transition-colors text-indigo-300 hover:text-indigo-200 border border-indigo-500/30"
+              >
+                <ShieldCheck className="w-5 h-5" />
+                <span className="font-medium">Admin: Pagamentos</span>
+              </Link>
+            </li>
+          )}
 
         </ul>
       </nav>
