@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { getMyTenantSlug } from "@/src/lib/actions/auth-actions"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -28,8 +29,14 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Email ou senha inválidos")
       } else {
-        // Redireciona direto para o sistema
-        router.push("/") 
+        // Busca o slug da clínica do usuário para redirecionar
+        const tenantSlug = await getMyTenantSlug()
+        
+        if (tenantSlug) {
+          router.push(`/${tenantSlug}/dashboard`)
+        } else {
+          router.push("/")
+        }
         router.refresh()
       }
     } catch (err) {

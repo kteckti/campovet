@@ -8,20 +8,13 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const { nextUrl } = req
   
-  const user = req.auth?.user as any
-
-  // 1. Redirecionar usuário logado na raiz para o seu tenant dashboard
-  if (isLoggedIn && nextUrl.pathname === "/") {
-    if (user?.tenantSlug) {
-      return NextResponse.redirect(new URL(`/${user.tenantSlug}/dashboard`, nextUrl))
-    }
-  }
-
-  // 2. Permitir acesso a rotas públicas
+  // 1. Permitir acesso a rotas públicas
   const isPublicRoute = nextUrl.pathname === "/" || nextUrl.pathname === "/login" || nextUrl.pathname === "/register"
+  
+  // Se estiver logado e tentar acessar a raiz, o login/page ou dashboard cuidará do redirecionamento
   if (isPublicRoute) return NextResponse.next()
 
-  // 3. Redirecionar para login se não estiver autenticado
+  // 2. Redirecionar para login se não estiver autenticado
   if (!isLoggedIn) {
     return NextResponse.redirect(new URL("/login", nextUrl))
   }
