@@ -24,3 +24,54 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Estilos para impressão do relatório financeiro */
+@media print {
+  /* Ocultar elementos desnecessários no PDF */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Remover scroll do resumo de atendimentos */
+  .print-full-height {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  /* Garantir que a página seja impressa corretamente */
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Evitar quebras de página dentro de elementos importantes */
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* Estilos adicionais para melhorar a impressão */
+@media print {
+  /* Remover fundo colorido do container do relatório */
+  .print-avoid-break {
+    background: white !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  
+  /* Ajustar o container interno */
+  .print-avoid-break > div {
+    background: white !important;
+    padding: 20px !important;
+  }
+  
+  /* Garantir que a tabela seja visível */
+  table {
+    width: 100% !important;
+  }
+  
+  /* Ajustar margens da página */
+  @page {
+    margin: 1cm;
+  }
+}

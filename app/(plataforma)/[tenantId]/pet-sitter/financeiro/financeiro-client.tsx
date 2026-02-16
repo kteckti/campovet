@@ -115,7 +115,7 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
     <div className="space-y-8">
       
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 no-print">
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-green-100 text-green-600 rounded-lg">
@@ -160,13 +160,13 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
       </div>
 
       {/* Seção de Relatório para o Cliente */}
-      <div className="bg-indigo-900 rounded-2xl shadow-xl overflow-hidden text-white">
-        <div className="p-6 border-b border-indigo-800 flex items-center gap-3">
+      <div className="bg-indigo-900 rounded-2xl shadow-xl overflow-hidden text-white print-avoid-break">
+        <div className="p-6 border-b border-indigo-800 flex items-center gap-3 no-print">
           <FileText size={24} className="text-indigo-300" />
           <h2 className="text-xl font-bold">Relatório de Cobrança por Cliente</h2>
         </div>
         <div className="p-6 bg-indigo-950/50">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 no-print">
             <div>
               <label className="block text-xs font-bold text-indigo-300 uppercase mb-2">Selecionar Cliente</label>
               <select 
@@ -212,7 +212,7 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
               </div>
               
               {reportData.length > 0 ? (
-                <div className="max-h-60 overflow-y-auto">
+                <div className="max-h-60 overflow-y-auto print-full-height">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-gray-400 font-bold uppercase text-[10px]">
                       <tr>
@@ -242,7 +242,7 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
                 </div>
               )}
               
-              <div className="p-4 bg-gray-50 flex justify-end">
+              <div className="p-4 bg-gray-50 flex justify-end no-print">
                 <button 
                   onClick={() => window.print()}
                   className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors"
@@ -252,7 +252,7 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
               </div>
             </div>
           ) : (
-            <div className="p-12 text-center border-2 border-dashed border-indigo-700 rounded-xl text-indigo-300">
+            <div className="p-12 text-center border-2 border-dashed border-indigo-700 rounded-xl text-indigo-300 no-print">
               Selecione um cliente acima para gerar o relatório de cobrança.
             </div>
           )}
@@ -260,7 +260,7 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
       </div>
 
       {/* Tabela de Lançamentos Gerais */}
-      <div className="space-y-4">
+      <div className="space-y-4 no-print">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800">Histórico de Lançamentos</h2>
           <div className="flex gap-2">
