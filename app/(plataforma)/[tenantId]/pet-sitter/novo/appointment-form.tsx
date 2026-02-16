@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createPetSitterAppointment } from "@/src/actions/pet-sitter"
+import { createPetSitterAppointment, updatePetSitterAppointment } from "@/src/actions/pet-sitter"
 import { useRouter } from "next/navigation"
 import { Calendar, DollarSign, MapPin, Repeat } from "lucide-react"
 
@@ -25,26 +25,40 @@ interface AppointmentFormProps {
   tenantId: string
   pets: Pet[]
   services: Service[]
+  initialData?: {
+    id: string
+    petId: string
+    serviceId: string
+    date: string
+    time: string
+    distanceKm: string
+    address: string
+    notes: string
+    isRecurring: boolean
+    recurrencePattern: string
+    recurrenceEndDate: string
+  }
 }
 
-export function AppointmentForm({ tenantId, pets, services }: AppointmentFormProps) {
+export function AppointmentForm({ tenantId, pets, services, initialData }: AppointmentFormProps) {
   const router = useRouter()
-  const [selectedService, setSelectedService] = useState<Service | null>(null)
-  const [distanceKm, setDistanceKm] = useState<string>("")
-  const [isRecurring, setIsRecurring] = useState(false)
-  const [selectedDays, setSelectedDays] = useState<string[]>([])
-  const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [selectedService, setSelectedService] = useState<Service | null>(
+    initialData ? services.find(s => s.id === initialData.serviceId) || null : null
+  )
+  const [distanceKm, setDistanceKm] = useState<string>(initialData?.distanceKm || "")
+  const [isRecurring, setIsRecurring] = useState(initialData?.isRecurring || false)
+  const [selectedDays, setSelectedDays] = useState<string[]>(
+    initialData?.recurrencePattern ? initialData.recurrencePattern.split("_").slice(1) : []
+  )
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(
+    initialData ? pets.find(p => p.id === initialData.petId) || null : null
+  )
 
   // Calcular valores (Ida e Volta)
-  // Gasolina: R$ 6,50 / Consumo: 6km/l = R$ 1,083 por KM
   const fuelCostPerKm = 6.50 / 6 
-  
-  // Garantir que distanceKm seja tratado como número com segurança
   const distance = distanceKm && !isNaN(parseFloat(distanceKm)) ? parseFloat(distanceKm) : 0
   const totalDistance = distance * 2 // Ida e Volta
   const fuelCost = totalDistance * fuelCostPerKm
-  
-  // Garantir que o preço do serviço seja tratado como número
   const servicePrice = selectedService?.price ? Number(selectedService.price) : 0
   const totalCost = servicePrice + fuelCost
 
@@ -52,14 +66,22 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     
-    // Adicionar padrão de recorrência se aplicável
     if (isRecurring && selectedDays.length > 0) {
       const pattern = `WEEKLY_${selectedDays.join("_")}`
       formData.set("recurrencePattern", pattern)
     }
-    
-    await createPetSitterAppointment(tenantId, formData)
-    router.push(`/${tenantId}/pet-sitter`)
+
+    try {
+      if (initialData?.id) {
+        await updatePetSitterAppointment(initialData.id, tenantId, formData)
+      } else {
+        await createPetSitterAppointment(tenantId, formData)
+      }
+      router.push(`/${tenantId}/pet-sitter`)
+      router.refresh()
+    } catch (error) {
+      alert("Erro ao salvar agendamento.")
+    }
   }
 
   const toggleDay = (day: string) => {
@@ -91,6 +113,7 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
         <select 
           name="petId"
           required
+          defaultValue={initialData?.petId || ""}
           onChange={(e) => {
             const pet = pets.find(p => p.id === e.target.value)
             setSelectedPet(pet || null)
@@ -114,6 +137,7 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
         <select 
           name="serviceId"
           required
+          defaultValue={initialData?.serviceId || ""}
           onChange={(e) => {
             const service = services.find(s => s.id === e.target.value)
             setSelectedService(service || null)
@@ -140,6 +164,7 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
             type="date" 
             name="date"
             required
+            defaultValue={initialData?.date || ""}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -152,6 +177,7 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
             type="time" 
             name="time"
             required
+            defaultValue={initialData?.time || ""}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -171,13 +197,10 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
           <input 
             type="text" 
             name="address"
-            defaultValue={selectedPet?.owner.address || ""}
+            defaultValue={initialData?.address || selectedPet?.owner.address || ""}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="Ex: Rua das Flores, 123 - Apto 42"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Deixe em branco para usar o endereço cadastrado do tutor
-          </p>
         </div>
 
         <div>
@@ -195,71 +218,67 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="0.0"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Distância do local de partida até o cliente (usado para calcular combustível)
-          </p>
         </div>
       </div>
 
       {/* Recorrência */}
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
-        <div className="flex items-center gap-3">
-          <input 
-            type="checkbox" 
-            id="isRecurring"
-            name="isRecurring"
-            value="true"
-            checked={isRecurring}
-            onChange={(e) => setIsRecurring(e.target.checked)}
-            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-          />
-          <label htmlFor="isRecurring" className="font-semibold text-gray-800 flex items-center gap-2">
-            <Repeat size={18} className="text-purple-600" />
-            Visita Recorrente
-          </label>
-        </div>
+      {!initialData && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="isRecurring"
+              name="isRecurring"
+              value="true"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+            />
+            <label htmlFor="isRecurring" className="font-semibold text-gray-800 flex items-center gap-2">
+              <Repeat size={18} className="text-purple-600" />
+              Visita Recorrente
+            </label>
+          </div>
 
-        {isRecurring && (
-          <div className="space-y-4 pl-7">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dias da Semana
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {daysOfWeek.map(day => (
-                  <button
-                    key={day.value}
-                    type="button"
-                    onClick={() => toggleDay(day.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedDays.includes(day.value)
-                        ? "bg-indigo-600 text-white"
-                        : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {day.label}
-                  </button>
-                ))}
+          {isRecurring && (
+            <div className="space-y-4 pl-7">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dias da Semana
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {daysOfWeek.map(day => (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => toggleDay(day.value)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        selectedDays.includes(day.value)
+                          ? "bg-indigo-600 text-white"
+                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {day.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data Final da Recorrência *
+                </label>
+                <input 
+                  type="date" 
+                  name="recurrenceEndDate"
+                  required={isRecurring}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Data Final da Recorrência *
-              </label>
-              <input 
-                type="date" 
-                name="recurrenceEndDate"
-                required={isRecurring}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Até quando as visitas devem se repetir
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Observações */}
       <div>
@@ -269,8 +288,9 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
         <textarea 
           name="notes"
           rows={4}
+          defaultValue={initialData?.notes || ""}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="Instruções sobre alimentação, chaves, comportamento..."
+          placeholder="Instruções..."
         />
       </div>
 
@@ -304,7 +324,7 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
           type="submit"
           className="flex-1 bg-indigo-600 text-white font-medium py-3 rounded-lg hover:bg-indigo-700 transition-colors"
         >
-          Confirmar Agendamento
+          {initialData ? "Salvar Alterações" : "Confirmar Agendamento"}
         </button>
         <button 
           type="button"

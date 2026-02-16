@@ -131,12 +131,13 @@ export function DashboardClient({ initialAppointments, tenantId }: DashboardClie
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button 
+                      <Link 
+                        href={`/${tenantId}/pet-sitter/${appointment.id}/edit`}
                         className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                         title="Reagendar / Editar"
                       >
                         <Edit size={16} />
-                      </button>
+                      </Link>
                       <button 
                         onClick={() => handleCancel(appointment.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"

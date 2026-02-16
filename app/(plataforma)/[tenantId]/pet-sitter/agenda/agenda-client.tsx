@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar as CalendarIcon, Clock, User, PawPrint, MapPin, ChevronLeft, ChevronRight, AlertCircle, Trash2, Edit } from "lucide-react"
+import { Calendar as CalendarIcon, Clock, User, MapPin, ChevronLeft, ChevronRight, Trash2, Edit } from "lucide-react"
 import Link from "next/link"
+import { cancelAppointment } from "@/src/actions/pet-sitter"
 
 interface Appointment {
   id: string
@@ -29,20 +30,33 @@ interface AgendaClientProps {
 
 export function AgendaClient({ initialAppointments, tenantId }: AgendaClientProps) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [appointments, setAppointments] = useState(initialAppointments)
 
-  const filteredAppointments = initialAppointments.filter(app => {
+  const filteredAppointments = appointments.filter(app => {
+    // Normalizar datas para comparação segura (YYYY-MM-DD)
     const appDate = new Date(app.date).toISOString().split('T')[0]
     return appDate === selectedDate
   })
 
   const changeDate = (days: number) => {
-    const date = new Date(selectedDate)
+    const date = new Date(selectedDate + 'T12:00:00')
     date.setDate(date.getDate() + days)
     setSelectedDate(date.toISOString().split('T')[0])
   }
 
+  const handleCancel = async (id: string) => {
+    if (confirm("Tem certeza que deseja cancelar este agendamento?")) {
+      try {
+        await cancelAppointment(id, tenantId)
+        setAppointments(prev => prev.filter(app => app.id !== id))
+      } catch (error) {
+        alert("Erro ao cancelar agendamento.")
+      }
+    }
+  }
+
   const formatDateDisplay = (dateStr: string) => {
-    const date = new Date(dateStr + 'T12:00:00') // evita problemas de fuso
+    const date = new Date(dateStr + 'T12:00:00')
     return date.toLocaleDateString('pt-BR', { 
       weekday: 'long', 
       day: '2-digit', 
@@ -78,10 +92,10 @@ export function AgendaClient({ initialAppointments, tenantId }: AgendaClientProp
             onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
             className="ml-2 text-sm text-indigo-600 font-medium hover:underline"
           >
-            Ir para Hoje
+            Hoje
           </button>
         </div>
-        <div className="text-gray-500 font-medium">
+        <div className="text-gray-500 font-medium capitalize">
           {formatDateDisplay(selectedDate)}
         </div>
       </div>
@@ -103,12 +117,6 @@ export function AgendaClient({ initialAppointments, tenantId }: AgendaClientProp
             <CalendarIcon className="mx-auto h-12 w-12 text-gray-200 mb-4" />
             <h3 className="text-lg font-medium text-gray-900">Nenhuma visita para este dia</h3>
             <p className="text-gray-500 text-sm mt-1">Aproveite o tempo livre ou agende um novo cliente.</p>
-            <Link 
-              href={`/${tenantId}/pet-sitter/novo`}
-              className="mt-6 inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            >
-              Nova Visita
-            </Link>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -124,11 +132,6 @@ export function AgendaClient({ initialAppointments, tenantId }: AgendaClientProp
                       <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full font-medium">
                         {app.service.name}
                       </span>
-                      {app.status === "CANCELED" && (
-                        <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full font-medium">
-                          Cancelado
-                        </span>
-                      )}
                     </div>
                     <div className="flex flex-col gap-1 text-sm text-gray-500">
                       <div className="flex items-center gap-1.5">
@@ -146,10 +149,18 @@ export function AgendaClient({ initialAppointments, tenantId }: AgendaClientProp
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar">
+                  <Link 
+                    href={`/${tenantId}/pet-sitter/${app.id}/edit`}
+                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" 
+                    title="Editar"
+                  >
                     <Edit size={18} />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancelar">
+                  </Link>
+                  <button 
+                    onClick={() => handleCancel(app.id)}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                    title="Cancelar"
+                  >
                     <Trash2 size={18} />
                   </button>
                 </div>
