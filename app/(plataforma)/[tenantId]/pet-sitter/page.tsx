@@ -7,9 +7,9 @@ import {
   MapPin, 
   Clock,
   History,
-  AlertCircle,
   DollarSign
 } from "lucide-react"
+import { DashboardClient } from "./dashboard-client"
 
 interface PageProps {
   params: Promise<{ tenantId: string }>
@@ -85,7 +85,7 @@ export default async function PetSitterPage({ params }: PageProps) {
     }
   })
 
-  // Próximas visitas
+  // Buscar TODAS as próximas visitas (o cliente faz o slice inicial de 5)
   const upcomingAppointments = await db.petSitterAppointment.findMany({
     where: { 
       tenantId: tenant.id,
@@ -96,17 +96,32 @@ export default async function PetSitterPage({ params }: PageProps) {
       pet: { include: { owner: true } },
       service: true
     },
-    orderBy: { date: 'asc' },
-    take: 10
+    orderBy: [
+      { date: 'asc' },
+      { time: 'asc' }
+    ]
   })
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("pt-BR", { 
-      day: '2-digit', 
-      month: 'short',
-      year: 'numeric'
-    })
-  }
+  // Serializar para o cliente
+  const serializedAppointments = upcomingAppointments.map(app => ({
+    id: app.id,
+    date: app.date.toISOString(),
+    time: app.time,
+    status: app.status,
+    isPaid: app.isPaid,
+    totalCost: Number(app.totalCost),
+    isRecurring: app.isRecurring,
+    pet: {
+      name: app.pet.name,
+      owner: {
+        name: app.pet.owner.name,
+        phone: app.pet.owner.phone
+      }
+    },
+    service: {
+      name: app.service.name
+    }
+  }))
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -179,78 +194,8 @@ export default async function PetSitterPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Próximas Visitas */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-100 bg-gray-50">
-          <h2 className="font-bold text-gray-800">Próximas Visitas Agendadas</h2>
-        </div>
-        
-        {upcomingAppointments.length === 0 ? (
-          <div className="p-12 text-center">
-            <AlertCircle className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <h3 className="text-lg font-medium text-gray-900">Nenhuma visita encontrada</h3>
-            <p className="text-gray-500 text-sm mb-4">Comece criando seu primeiro agendamento.</p>
-            <Link 
-              href={`/${tenantId}/pet-sitter/novo`}
-              className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            >
-              <Plus size={18} /> Agendar Primeira Visita
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-3">Data/Hora</th>
-                  <th className="px-6 py-3">Cliente</th>
-                  <th className="px-6 py-3">Pet</th>
-                  <th className="px-6 py-3">Serviço</th>
-                  <th className="px-6 py-3">Valor</th>
-                  <th className="px-6 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {upcomingAppointments.map(appointment => (
-                  <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{formatDate(appointment.date)}</div>
-                      <div className="text-xs text-gray-500">{appointment.time}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{appointment.pet.owner.name}</div>
-                      {appointment.pet.owner.phone && (
-                        <div className="text-xs text-gray-500">{appointment.pet.owner.phone}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">{appointment.pet.name}</td>
-                    <td className="px-6 py-4">
-                      <span className="text-gray-700">{appointment.service.name}</span>
-                      {appointment.isRecurring && (
-                        <span className="ml-2 text-xs text-purple-600" title="Recorrente">🔄</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900">
-                      R$ {Number(appointment.totalCost).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4">
-                      {appointment.isPaid ? (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                          Pago
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                          Pendente
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Próximas Visitas (Componente Cliente) */}
+      <DashboardClient initialAppointments={serializedAppointments} tenantId={tenantId} />
     </div>
   )
 }
