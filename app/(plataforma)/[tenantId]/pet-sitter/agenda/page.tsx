@@ -40,6 +40,7 @@ export default async function AgendaPetSitterPage({ params }: PageProps) {
     date: app.date.toISOString(),
     time: app.time,
     status: app.status,
+    isRecurring: app.isRecurring,
     pet: {
       name: app.pet.name,
       owner: {

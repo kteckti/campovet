@@ -10,6 +10,7 @@ interface Appointment {
   date: string
   time: string
   status: string
+  isRecurring: boolean
   pet: {
     name: string
     owner: {
@@ -44,14 +45,25 @@ export function AgendaClient({ initialAppointments, tenantId }: AgendaClientProp
     setSelectedDate(date.toISOString().split('T')[0])
   }
 
-  const handleCancel = async (id: string) => {
-    if (confirm("Tem certeza que deseja cancelar este agendamento?")) {
-      try {
-        await cancelAppointment(id, tenantId)
-        setAppointments(prev => prev.filter(app => app.id !== id))
-      } catch (error) {
-        alert("Erro ao cancelar agendamento.")
+  const handleCancel = async (app: Appointment) => {
+    let cancelSeries = false
+    
+    if (app.isRecurring) {
+      const choice = confirm("Este é um agendamento recorrente.\n\nClique em OK para cancelar TODA A SÉRIE futura.\nClique em CANCELAR para cancelar APENAS ESTA visita.")
+      cancelSeries = choice
+    } else {
+      if (!confirm("Tem certeza que deseja cancelar este agendamento?")) return
+    }
+
+    try {
+      await cancelAppointment(app.id, tenantId, cancelSeries)
+      if (cancelSeries) {
+        window.location.reload()
+      } else {
+        setAppointments(prev => prev.filter(a => a.id !== app.id))
       }
+    } catch (error) {
+      alert("Erro ao cancelar agendamento.")
     }
   }
 
@@ -157,7 +169,7 @@ export function AgendaClient({ initialAppointments, tenantId }: AgendaClientProp
                     <Edit size={18} />
                   </Link>
                   <button 
-                    onClick={() => handleCancel(app.id)}
+                    onClick={() => handleCancel(app)}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
                     title="Cancelar"
                   >

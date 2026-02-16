@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { 
   DollarSign, 
   TrendingUp, 
@@ -9,7 +9,11 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  CreditCard
+  CreditCard,
+  FileText,
+  Search,
+  Calendar as CalendarIcon,
+  Download
 } from "lucide-react"
 import { markAppointmentAsPaid } from "@/src/actions/pet-sitter"
 
@@ -46,8 +50,40 @@ interface FinanceiroClientProps {
 export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientProps) {
   const [filter, setFilter] = useState<"all" | "pending" | "paid">("all")
   const [payingAppointment, setPayingAppointment] = useState<Appointment | null>(null)
+  
+  // Estados para o Relatório
+  const [reportOwnerName, setReportOwnerName] = useState<string>("")
+  const [reportStartDate, setReportStartDate] = useState<string>(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]
+  })
+  const [reportEndDate, setReportEndDate] = useState<string>(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0]
+  })
 
-  // Calcular totais
+  // Lista de tutores únicos para o filtro
+  const owners = useMemo(() => {
+    const uniqueOwners = new Set<string>()
+    appointments.forEach(a => uniqueOwners.add(a.pet.owner.name))
+    return Array.from(uniqueOwners).sort()
+  }, [appointments])
+
+  // Dados do Relatório Filtrados
+  const reportData = useMemo(() => {
+    if (!reportOwnerName) return []
+    return appointments.filter(a => {
+      const appDate = new Date(a.date).toISOString().split('T')[0]
+      return a.pet.owner.name === reportOwnerName && 
+             appDate >= reportStartDate && 
+             appDate <= reportEndDate &&
+             a.status !== "CANCELED"
+    })
+  }, [reportOwnerName, reportStartDate, reportEndDate, appointments])
+
+  const reportTotal = reportData.reduce((sum, a) => sum + a.totalCost, 0)
+
+  // Calcular totais gerais
   const totalReceived = appointments
     .filter(a => a.isPaid)
     .reduce((sum, a) => sum + a.totalCost, 0)
@@ -64,13 +100,6 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
     .filter(a => a.isPaid)
     .reduce((sum, a) => sum + a.serviceValue, 0)
 
-  // Filtrar agendamentos
-  const filteredAppointments = appointments.filter(a => {
-    if (filter === "pending") return !a.isPaid && a.status !== "CANCELED"
-    if (filter === "paid") return a.isPaid
-    return true
-  })
-
   const handleMarkAsPaid = async (paymentMethod: string) => {
     if (!payingAppointment) return
     await markAppointmentAsPaid(payingAppointment.id, tenantId, paymentMethod)
@@ -82,32 +111,8 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
     return date.toLocaleDateString("pt-BR")
   }
 
-  const getStatusBadge = (status: string, isPaid: boolean) => {
-    if (isPaid) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-          <CheckCircle size={12} /> Pago
-        </span>
-      )
-    }
-    
-    if (status === "CANCELED") {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-          <XCircle size={12} /> Cancelado
-        </span>
-      )
-    }
-
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-        <Clock size={12} /> Pendente
-      </span>
-    )
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -154,170 +159,177 @@ export function FinanceiroClient({ appointments, tenantId }: FinanceiroClientPro
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === "all"
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Todos ({appointments.length})
-          </button>
-          <button
-            onClick={() => setFilter("pending")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === "pending"
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Pendentes ({appointments.filter(a => !a.isPaid && a.status !== "CANCELED").length})
-          </button>
-          <button
-            onClick={() => setFilter("paid")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === "paid"
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Pagos ({appointments.filter(a => a.isPaid).length})
-          </button>
+      {/* Seção de Relatório para o Cliente */}
+      <div className="bg-indigo-900 rounded-2xl shadow-xl overflow-hidden text-white">
+        <div className="p-6 border-b border-indigo-800 flex items-center gap-3">
+          <FileText size={24} className="text-indigo-300" />
+          <h2 className="text-xl font-bold">Relatório de Cobrança por Cliente</h2>
+        </div>
+        <div className="p-6 bg-indigo-950/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label className="block text-xs font-bold text-indigo-300 uppercase mb-2">Selecionar Cliente</label>
+              <select 
+                value={reportOwnerName}
+                onChange={(e) => setReportOwnerName(e.target.value)}
+                className="w-full bg-indigo-900 border border-indigo-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                <option value="">Selecione um tutor...</option>
+                {owners.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-indigo-300 uppercase mb-2">Data Inicial</label>
+              <input 
+                type="date" 
+                value={reportStartDate}
+                onChange={(e) => setReportStartDate(e.target.value)}
+                className="w-full bg-indigo-900 border border-indigo-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-indigo-300 uppercase mb-2">Data Final</label>
+              <input 
+                type="date" 
+                value={reportEndDate}
+                onChange={(e) => setReportEndDate(e.target.value)}
+                className="w-full bg-indigo-900 border border-indigo-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+          </div>
+
+          {reportOwnerName ? (
+            <div className="bg-white rounded-xl overflow-hidden text-gray-800 shadow-2xl">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-lg">Resumo de Atendimentos</h3>
+                  <p className="text-sm text-gray-500">Tutor: {reportOwnerName}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-400 uppercase font-bold">Total a Cobrar</div>
+                  <div className="text-2xl font-black text-indigo-600">R$ {reportTotal.toFixed(2)}</div>
+                </div>
+              </div>
+              
+              {reportData.length > 0 ? (
+                <div className="max-h-60 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-gray-400 font-bold uppercase text-[10px]">
+                      <tr>
+                        <th className="px-6 py-3 text-left">Data</th>
+                        <th className="px-6 py-3 text-left">Pet / Serviço</th>
+                        <th className="px-6 py-3 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {reportData.map(a => (
+                        <tr key={a.id}>
+                          <td className="px-6 py-3 font-medium">{formatDate(a.date)}</td>
+                          <td className="px-6 py-3">
+                            <span className="font-bold">{a.pet.name}</span>
+                            <span className="mx-2 text-gray-300">|</span>
+                            <span className="text-gray-500">{a.service.name}</span>
+                          </td>
+                          <td className="px-6 py-3 text-right font-bold">R$ {a.totalCost.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-10 text-center text-gray-400">
+                  Nenhum atendimento encontrado para este período.
+                </div>
+              )}
+              
+              <div className="p-4 bg-gray-50 flex justify-end">
+                <button 
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors"
+                >
+                  <Download size={16} /> Baixar Relatório (PDF)
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-12 text-center border-2 border-dashed border-indigo-700 rounded-xl text-indigo-300">
+              Selecione um cliente acima para gerar o relatório de cobrança.
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Tabela de Agendamentos */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4">Data/Hora</th>
-                <th className="px-6 py-4">Cliente/Pet</th>
-                <th className="px-6 py-4">Serviço</th>
-                <th className="px-6 py-4">Distância</th>
-                <th className="px-6 py-4">Combustível</th>
-                <th className="px-6 py-4">Valor Total</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredAppointments.length === 0 ? (
+      {/* Tabela de Lançamentos Gerais */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-800">Histórico de Lançamentos</h2>
+          <div className="flex gap-2">
+            <button onClick={() => setFilter("all")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === "all" ? "bg-indigo-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>Todos</button>
+            <button onClick={() => setFilter("pending")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === "pending" ? "bg-indigo-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>Pendentes</button>
+            <button onClick={() => setFilter("paid")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === "paid" ? "bg-indigo-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>Pagos</button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs border-b border-gray-200">
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
-                    Nenhum agendamento encontrado
-                  </td>
+                  <th className="px-6 py-4">Data</th>
+                  <th className="px-6 py-4">Cliente/Pet</th>
+                  <th className="px-6 py-4">Serviço</th>
+                  <th className="px-6 py-4">Combustível</th>
+                  <th className="px-6 py-4">Total</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Ação</th>
                 </tr>
-              ) : (
-                filteredAppointments.map(appointment => (
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {appointments.filter(a => {
+                  if (filter === "pending") return !a.isPaid && a.status !== "CANCELED"
+                  if (filter === "paid") return a.isPaid
+                  return true
+                }).map(appointment => (
                   <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 font-medium">{formatDate(appointment.date)}</td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{formatDate(appointment.date)}</div>
-                      <div className="text-xs text-gray-500">{appointment.time}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{appointment.pet.owner.name}</div>
+                      <div className="font-bold text-gray-900">{appointment.pet.owner.name}</div>
                       <div className="text-xs text-gray-500">{appointment.pet.name}</div>
                     </td>
-                    <td className="px-6 py-4 text-gray-700">
-                      {appointment.service.name}
-                      {appointment.isRecurring && (
-                        <span className="ml-2 text-xs text-purple-600">🔄</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">
-                      {appointment.distanceKm.toFixed(1)} km
-                    </td>
-                    <td className="px-6 py-4 text-red-600 font-medium">
-                      R$ {appointment.fuelCost.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 text-gray-900 font-bold">
-                      R$ {appointment.totalCost.toFixed(2)}
-                    </td>
+                    <td className="px-6 py-4 text-gray-700">{appointment.service.name}</td>
+                    <td className="px-6 py-4 text-red-600">R$ {appointment.fuelCost.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-900 font-bold">R$ {appointment.totalCost.toFixed(2)}</td>
                     <td className="px-6 py-4">
-                      {getStatusBadge(appointment.status, appointment.isPaid)}
+                      {appointment.isPaid ? (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded-full">Pago</span>
+                      ) : (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-[10px] font-bold uppercase rounded-full">Pendente</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {!appointment.isPaid && appointment.status !== "CANCELED" && (
-                        <button
-                          onClick={() => setPayingAppointment(appointment)}
-                          className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          Marcar como Pago
-                        </button>
-                      )}
-                      {appointment.isPaid && appointment.paymentMethod && (
-                        <span className="text-xs text-gray-500">
-                          {appointment.paymentMethod}
-                        </span>
+                        <button onClick={() => setPayingAppointment(appointment)} className="text-indigo-600 font-bold text-xs hover:underline">Marcar Pago</button>
                       )}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* Modal de Pagamento */}
+      {/* Modal de Pagamento (Mantido do original) */}
       {payingAppointment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="p-6">
-              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard size={24} />
-              </div>
-              <h3 className="font-bold text-gray-900 text-lg mb-2 text-center">
-                Confirmar Pagamento
-              </h3>
-              <p className="text-gray-500 text-sm mb-4 text-center">
-                Cliente: <strong>{payingAppointment.pet.owner.name}</strong><br />
-                Valor: <strong className="text-green-600">R$ {payingAppointment.totalCost.toFixed(2)}</strong>
-              </p>
-              
-              <div className="space-y-2 mb-6">
-                <p className="text-sm font-medium text-gray-700">Selecione a forma de pagamento:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => handleMarkAsPaid("PIX")}
-                    className="px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
-                  >
-                    PIX
-                  </button>
-                  <button
-                    onClick={() => handleMarkAsPaid("CREDITO")}
-                    className="px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    Crédito
-                  </button>
-                  <button
-                    onClick={() => handleMarkAsPaid("DEBITO")}
-                    className="px-4 py-3 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-                  >
-                    Débito
-                  </button>
-                  <button
-                    onClick={() => handleMarkAsPaid("DINHEIRO")}
-                    className="px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-                  >
-                    Dinheiro
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setPayingAppointment(null)}
-                className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-              >
-                Cancelar
-              </button>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden p-6">
+            <h3 className="font-bold text-gray-900 text-lg mb-4 text-center">Confirmar Pagamento</h3>
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              {["PIX", "CREDITO", "DEBITO", "DINHEIRO"].map(m => (
+                <button key={m} onClick={() => handleMarkAsPaid(m)} className="px-4 py-3 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700">{m}</button>
+              ))}
             </div>
+            <button onClick={() => setPayingAppointment(null)} className="w-full py-2 text-gray-500 font-bold text-sm">Cancelar</button>
           </div>
         </div>
       )}

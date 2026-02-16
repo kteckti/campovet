@@ -174,12 +174,38 @@ async function createRecurringAppointments(
   }
 }
 
-export async function cancelAppointment(appointmentId: string, tenantId: string) {
-  await db.petSitterAppointment.update({
-    where: { id: appointmentId },
-    data: { status: "CANCELED" }
+export async function cancelAppointment(appointmentId: string, tenantId: string, cancelSeries: boolean = false) {
+  const appointment = await db.petSitterAppointment.findUnique({
+    where: { id: appointmentId }
   })
+
+  if (!appointment) throw new Error("Agendamento não encontrado")
+
+  if (cancelSeries && appointment.isRecurring) {
+    // Cancelar este e todos os futuros da mesma série
+    const parentId = appointment.parentAppointmentId || appointment.id
+    
+    await db.petSitterAppointment.updateMany({
+      where: {
+        OR: [
+          { id: parentId },
+          { parentAppointmentId: parentId }
+        ],
+        date: { gte: appointment.date },
+        status: "SCHEDULED"
+      },
+      data: { status: "CANCELED" }
+    })
+  } else {
+    // Cancelar apenas este
+    await db.petSitterAppointment.update({
+      where: { id: appointmentId },
+      data: { status: "CANCELED" }
+    })
+  }
+
   revalidatePath(`/${tenantId}/pet-sitter`)
+  revalidatePath(`/${tenantId}/pet-sitter/agenda`)
 }
 
 export async function markAppointmentAsPaid(appointmentId: string, tenantId: string, paymentMethod: string) {

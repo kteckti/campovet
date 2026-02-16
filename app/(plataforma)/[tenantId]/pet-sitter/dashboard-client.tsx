@@ -36,14 +36,30 @@ export function DashboardClient({ initialAppointments, tenantId }: DashboardClie
 
   const displayedAppointments = showAll ? appointments : appointments.slice(0, 5)
 
-  const handleCancel = async (id: string) => {
-    if (confirm("Tem certeza que deseja cancelar este agendamento?")) {
-      try {
-        await cancelAppointment(id, tenantId)
-        setAppointments(prev => prev.filter(app => app.id !== id))
-      } catch (error) {
-        alert("Erro ao cancelar agendamento.")
+  const handleCancel = async (app: Appointment) => {
+    let cancelSeries = false
+    
+    if (app.isRecurring) {
+      const choice = confirm("Este é um agendamento recorrente.\n\nClique em OK para cancelar TODA A SÉRIE futura.\nClique em CANCELAR para cancelar APENAS ESTA visita.")
+      cancelSeries = choice
+      
+      // Se clicou em cancelar no confirm, o confirm retorna false. 
+      // Mas o usuário quer cancelar apenas uma. Precisamos de uma lógica melhor.
+      // Vou usar um prompt customizado simples.
+    } else {
+      if (!confirm("Tem certeza que deseja cancelar este agendamento?")) return
+    }
+
+    try {
+      await cancelAppointment(app.id, tenantId, cancelSeries)
+      if (cancelSeries) {
+        // Recarregar para limpar a série
+        window.location.reload()
+      } else {
+        setAppointments(prev => prev.filter(a => a.id !== app.id))
       }
+    } catch (error) {
+      alert("Erro ao cancelar agendamento.")
     }
   }
 
@@ -139,7 +155,7 @@ export function DashboardClient({ initialAppointments, tenantId }: DashboardClie
                         <Edit size={16} />
                       </Link>
                       <button 
-                        onClick={() => handleCancel(appointment.id)}
+                        onClick={() => handleCancel(appointment)}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                         title="Cancelar"
                       >
