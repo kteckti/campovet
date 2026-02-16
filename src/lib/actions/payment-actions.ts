@@ -152,11 +152,11 @@ export async function getSubscriptionStatus() {
 
   return {
     status: tenant.subscriptionStatus,
-    expiresAt,
+    expiresAt: expiresAt ? expiresAt.toISOString() : null, // Converter data para string para evitar problemas de serialização
     daysRemaining,
     planName: tenant.plan?.name,
     planPrice: tenant.plan?.price ? Number(tenant.plan.price) : 0,
     isExpiringSoon: daysRemaining <= 3 && daysRemaining >= 0,
     isExpired: daysRemaining < 0
-  }
+  } as any
 }

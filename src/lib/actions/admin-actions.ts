@@ -35,10 +35,20 @@ export async function getAllTenants() {
     orderBy: { createdAt: "desc" }
   })
 
-  // Converter Decimal para Number para evitar erro de serialização
+  // Converter Decimal para Number e Datas para Strings para evitar erro de serialização
   return tenants.map(tenant => ({
     ...tenant,
-    plan: tenant.plan ? { ...tenant.plan, price: Number(tenant.plan.price) } : null
+    createdAt: tenant.createdAt.toISOString(),
+    updatedAt: tenant.updatedAt.toISOString(),
+    trialEndsAt: tenant.trialEndsAt?.toISOString() || null,
+    nextBillingAt: tenant.nextBillingAt?.toISOString() || null,
+    lastPaymentAt: tenant.lastPaymentAt?.toISOString() || null,
+    plan: tenant.plan ? { 
+      ...tenant.plan, 
+      price: Number(tenant.plan.price),
+      createdAt: tenant.plan.createdAt.toISOString(),
+      updatedAt: tenant.plan.updatedAt.toISOString()
+    } : null
   }))
 }
 
@@ -122,10 +132,20 @@ export async function getPaymentHistory() {
     orderBy: { processedAt: "desc" }
   })
 
-  // Converter Decimal para Number
+  // Converter Decimal para Number e Datas para Strings
   return history.map(item => ({
     ...item,
-    amount: Number(item.amount)
+    amount: Number(item.amount),
+    requestedAt: item.requestedAt.toISOString(),
+    processedAt: item.processedAt?.toISOString() || null,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    tenant: {
+      ...item.tenant,
+      createdAt: item.tenant.createdAt.toISOString(),
+      updatedAt: item.tenant.updatedAt.toISOString(),
+      trialEndsAt: item.tenant.trialEndsAt?.toISOString() || null
+    }
   }))
 }
 
