@@ -1,6 +1,9 @@
+"use client"
+
 import Link from "next/link"
 import { MODULE_DEFINITIONS, DEFAULT_MENU } from "@/src/utils/app-modules"
-import { Scissors, DollarSign, Users } from "lucide-react" // <--- Import dos ícones
+import { Scissors, DollarSign, Users, LogOut } from "lucide-react"
+import { useSession, signOut } from "next-auth/react"
 
 interface SidebarProps {
   tenantSlug: string
@@ -9,6 +12,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ tenantSlug, activeModules, className }: SidebarProps) {
+  const { data: session } = useSession()
+  const user = session?.user as any
   return (
     // 'print:hidden' garante que o menu suma na impressão
     <aside className={`w-64 bg-slate-900 text-white flex flex-col h-screen print:hidden ${className}`}>
@@ -104,14 +109,23 @@ export function Sidebar({ tenantSlug, activeModules, className }: SidebarProps) 
 
       {/* Rodapé do Menu */}
       <div className="p-4 border-t border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold">
-            U
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 flex-shrink-0 flex items-center justify-center font-bold text-xs">
+              {user?.name?.charAt(0) || "U"}
+            </div>
+            <div className="text-sm truncate">
+              <p className="font-medium truncate">{user?.name || "Usuário"}</p>
+              <p className="text-[10px] text-slate-500 truncate capitalize">{user?.role?.toLowerCase() || "Acesso"}</p>
+            </div>
           </div>
-          <div className="text-sm">
-            <p className="font-medium">Usuário Teste</p>
-            <p className="text-xs text-slate-500">Sair</p>
-          </div>
+          <button 
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+            title="Sair do sistema"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </div>
     </aside>

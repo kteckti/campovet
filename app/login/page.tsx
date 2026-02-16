@@ -28,7 +28,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Email ou senha inválidos")
       } else {
-        router.push("/dashboard/modules")
+        // Redireciona direto para o sistema
+        router.push("/") 
         router.refresh()
       }
     } catch (err) {
