@@ -2,13 +2,14 @@
 
 import { db } from "@/src/lib/db"
 import bcrypt from "bcryptjs"
-import { redirect } from "next/navigation"
 
 export async function registerTenant(formData: any) {
   const { 
     name, 
     email, 
     password, 
+    phone,
+    document,
     clinicName, 
     planId, 
     selectedModules 
@@ -53,6 +54,7 @@ export async function registerTenant(formData: any) {
         data: {
           name: clinicName,
           slug,
+          document, // CPF ou CNPJ
           planId,
           subscriptionStatus: "TRIAL",
           trialEndsAt,
@@ -66,6 +68,7 @@ export async function registerTenant(formData: any) {
           name,
           email,
           password: hashedPassword,
+          phone, // Número de celular
           role: "GERENTE",
           tenantId: tenant.id
         }

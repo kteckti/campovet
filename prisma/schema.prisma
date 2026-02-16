@@ -134,6 +134,7 @@ model User {
   password    String?  // Hash da senha
   name        String?
   image       String?
+  phone       String?
   role        Role   @default(FUNCIONARIO)
   
   tenantId    String

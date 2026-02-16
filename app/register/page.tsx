@@ -4,8 +4,6 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { 
   Check, 
-  CreditCard, 
-  ShieldCheck, 
   ArrowRight, 
   ArrowLeft, 
   Loader2, 
@@ -13,6 +11,10 @@ import {
   Mail, 
   Lock, 
   User,
+  Phone,
+  FileText,
+  QrCode,
+  Copy,
   Zap,
   Star,
   Crown
@@ -25,18 +27,20 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [copied, setCopied] = useState(false)
   
+  const PIX_KEY = "7bd12887-e9fa-4edd-9f52-da5f41d68724"
+
   // Dados do formulário
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
+    phone: "",
+    document: "",
     clinicName: "",
     planId: "plan_essencial",
     selectedModules: [] as string[],
-    cardNumber: "",
-    cardExpiry: "",
-    cardCvc: ""
   })
 
   const [plans, setPlans] = useState<any[]>([])
@@ -53,7 +57,6 @@ export default function RegisterPage() {
   }, [])
 
   const handleModuleToggle = (moduleId: string) => {
-    const plan = plans.find(p => p.id === formData.planId)
     const maxModules = formData.planId === "plan_essencial" ? 1 : (formData.planId === "plan_profissional" ? 3 : 10)
     
     if (formData.selectedModules.includes(moduleId)) {
@@ -79,6 +82,12 @@ export default function RegisterPage() {
     })
   }
 
+  const copyPixKey = () => {
+    navigator.clipboard.writeText(PIX_KEY)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (step < 4) {
@@ -93,7 +102,7 @@ export default function RegisterPage() {
       const result = await registerTenant(formData)
       if (result.error) {
         setError(result.error)
-        setStep(1) // Volta para o início em caso de erro de dados
+        setStep(1)
       } else {
         router.push("/login?registered=true")
       }
@@ -113,7 +122,7 @@ export default function RegisterPage() {
             C
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Crie sua conta no CampoVet</h1>
-          <p className="text-gray-500 mt-2">Comece seu teste gratuito de 3 dias hoje mesmo</p>
+          <p className="text-gray-500 mt-2">Cadastro completo para acesso à plataforma</p>
         </div>
 
         {/* Progress Bar */}
@@ -146,7 +155,7 @@ export default function RegisterPage() {
                 <h2 className="text-xl font-bold text-gray-800 mb-6">Informações Básicas</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1">Seu Nome</label>
+                    <label className="text-sm font-bold text-gray-700 ml-1">Nome Completo</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                       <input
@@ -155,7 +164,7 @@ export default function RegisterPage() {
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                         className="w-full bg-gray-50 border border-gray-200 rounded-xl px-12 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                        placeholder="Nome completo"
+                        placeholder="Seu nome completo"
                       />
                     </div>
                   </div>
@@ -174,7 +183,35 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1">Nome da Clínica/Empresa</label>
+                    <label className="text-sm font-bold text-gray-700 ml-1">Celular / WhatsApp</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input
+                        type="tel"
+                        required
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-12 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        placeholder="(00) 00000-0000"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 ml-1">CPF ou CNPJ</label>
+                    <div className="relative">
+                      <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input
+                        type="text"
+                        required
+                        value={formData.document}
+                        onChange={(e) => setFormData({...formData, document: e.target.value})}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-12 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        placeholder="000.000.000-00"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 ml-1">Nome da Empresa / Clínica</label>
                     <div className="relative">
                       <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                       <input
@@ -281,66 +318,55 @@ export default function RegisterPage() {
                     )
                   })}
                 </div>
-                {formData.planId !== "plan_enterprise" && formData.selectedModules.length === 0 && (
-                  <p className="text-amber-600 text-xs font-medium">Por favor, selecione pelo menos um módulo.</p>
-                )}
               </div>
             )}
 
-            {/* Step 4: Pagamento / Cartão */}
+            {/* Step 4: Pagamento PIX */}
             {step === 4 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-indigo-600 rounded-2xl p-6 text-white mb-8">
-                  <div className="flex justify-between items-start mb-8">
-                    <ShieldCheck size={32} />
-                    <span className="text-xs font-bold uppercase tracking-widest opacity-80">Teste Grátis - 3 Dias</span>
-                  </div>
-                  <p className="text-sm opacity-90 mb-1">Total hoje</p>
-                  <h3 className="text-3xl font-bold">R$ 0,00</h3>
-                  <p className="text-xs mt-4 opacity-70">
-                    A cobrança de R$ {Number(plans.find(p => p.id === formData.planId)?.price).toFixed(2)} será efetuada automaticamente em 3 dias. Cancele a qualquer momento antes disso.
+                <div className="bg-indigo-600 rounded-2xl p-8 text-white mb-8 text-center">
+                  <QrCode size={48} className="mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold mb-2">Pagamento via PIX</h3>
+                  <p className="text-indigo-100 mb-6">
+                    Para ativar seu acesso, realize o pagamento do plano selecionado. O acesso será liberado em até 24h após a confirmação.
                   </p>
-                </div>
-
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Dados do Cartão</h2>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1">Número do Cartão</label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                      <input
-                        type="text"
-                        required
-                        value={formData.cardNumber}
-                        onChange={(e) => setFormData({...formData, cardNumber: e.target.value})}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-12 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                        placeholder="0000 0000 0000 0000"
-                      />
+                  
+                  <div className="bg-white/10 rounded-xl p-6 text-left mb-6">
+                    <p className="text-xs uppercase tracking-wider opacity-70 mb-2">Chave PIX (Copia e Cola)</p>
+                    <div className="flex items-center gap-3 bg-white/20 p-3 rounded-lg border border-white/30">
+                      <code className="flex-1 text-sm font-mono break-all">{PIX_KEY}</code>
+                      <button 
+                        type="button"
+                        onClick={copyPixKey}
+                        className="p-2 hover:bg-white/20 rounded-md transition-colors"
+                        title="Copiar chave"
+                      >
+                        {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
+                      </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700 ml-1">Validade</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.cardExpiry}
-                        onChange={(e) => setFormData({...formData, cardExpiry: e.target.value})}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                        placeholder="MM/AA"
-                      />
+
+                  <div className="grid grid-cols-2 gap-4 text-left">
+                    <div className="bg-white/10 p-4 rounded-xl">
+                      <p className="text-xs opacity-70">Plano</p>
+                      <p className="font-bold">{plans.find(p => p.id === formData.planId)?.name}</p>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700 ml-1">CVC</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.cardCvc}
-                        onChange={(e) => setFormData({...formData, cardCvc: e.target.value})}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                        placeholder="123"
-                      />
+                    <div className="bg-white/10 p-4 rounded-xl">
+                      <p className="text-xs opacity-70">Valor Mensal</p>
+                      <p className="font-bold text-green-300">R$ {Number(plans.find(p => p.id === formData.planId)?.price).toFixed(2)}</p>
                     </div>
+                  </div>
+                </div>
+                
+                <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex gap-3">
+                  <div className="bg-amber-100 p-2 rounded-lg h-fit">
+                    <Zap size={18} className="text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-amber-800">Período de Teste</p>
+                    <p className="text-xs text-amber-700">
+                      Seu cadastro inclui 3 dias de teste grátis. O pagamento via PIX garante a continuidade do serviço após esse período.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -379,11 +405,6 @@ export default function RegisterPage() {
             </div>
           </form>
         </div>
-
-        <p className="text-center text-gray-400 text-xs mt-8">
-          Ao se cadastrar, você concorda com nossos Termos de Uso e Política de Privacidade.<br />
-          Ambiente seguro e criptografado.
-        </p>
       </div>
     </div>
   )
