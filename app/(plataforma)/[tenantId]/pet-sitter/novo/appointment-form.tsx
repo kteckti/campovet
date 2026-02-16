@@ -38,10 +38,15 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
   // Calcular valores (Ida e Volta)
   // Gasolina: R$ 6,50 / Consumo: 6km/l = R$ 1,083 por KM
   const fuelCostPerKm = 6.50 / 6 
-  const distance = distanceKm ? parseFloat(distanceKm) : 0
+  
+  // Garantir que distanceKm seja tratado como número com segurança
+  const distance = distanceKm && !isNaN(parseFloat(distanceKm)) ? parseFloat(distanceKm) : 0
   const totalDistance = distance * 2 // Ida e Volta
   const fuelCost = totalDistance * fuelCostPerKm
-  const totalCost = (selectedService?.price || 0) + fuelCost
+  
+  // Garantir que o preço do serviço seja tratado como número
+  const servicePrice = selectedService?.price ? Number(selectedService.price) : 0
+  const totalCost = servicePrice + fuelCost
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -279,7 +284,7 @@ export function AppointmentForm({ tenantId, pets, services }: AppointmentFormPro
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Valor do Serviço:</span>
-              <span className="font-medium">R$ {selectedService.price.toFixed(2)}</span>
+              <span className="font-medium">R$ {servicePrice.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Custo de Combustível ({distance.toFixed(1)} km ida/volta):</span>
