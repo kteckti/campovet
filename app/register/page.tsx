@@ -291,10 +291,11 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {modules.map((mod) => {
                     const isSelected = formData.selectedModules.includes(mod.id)
-                    const isDisabled = !isSelected && (
+                    const isLimitReached = 
                       (formData.planId === "plan_essencial" && formData.selectedModules.length >= 1) ||
-                      (formData.planId === "plan_profissional" && formData.selectedModules.length >= 3)
-                    ) && formData.planId !== "plan_enterprise"
+                      (formData.planId === "plan_profissional" && formData.selectedModules.length >= 3);
+                    
+                    const isDisabled = !isSelected && isLimitReached && formData.planId !== "plan_enterprise";
 
                     return (
                       <div 
