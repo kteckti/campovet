@@ -1,4 +1,4 @@
-import { getPaymentHistory, getPendingPaymentRequests } from "@/src/lib/actions/admin-actions"
+import { getPaymentHistory } from "@/src/lib/actions/admin-actions"
 import { getPendingPaymentRequests as getPendingLegacy } from "@/src/lib/actions/payment-actions"
 import { ApproveButton } from "@/app/(plataforma)/[tenantId]/admin/pagamentos/approve-button"
 import { History, Clock, CheckCircle2, AlertCircle } from "lucide-react"
