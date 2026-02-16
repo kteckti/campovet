@@ -10,7 +10,7 @@ export default async function AdminLayout({
 }) {
   const session = await auth()
   
-  if (session?.user?.email !== "admin@campovet.com") {
+  if (session?.user?.email !== "kteckti@gmail.com") {
     redirect("/")
   }
 

@@ -116,7 +116,7 @@ export function Sidebar({ tenantSlug, activeModules, className }: SidebarProps) 
           </li>
 
           {/* === ITEM ADICIONADO: ADMIN CENTRAL (Apenas para o Admin Central) === */}
-          {user?.email === "admin@campovet.com" && (
+          {user?.email === "kteckti@gmail.com" && (
             <li>
               <Link 
                 href="/admin/clientes"

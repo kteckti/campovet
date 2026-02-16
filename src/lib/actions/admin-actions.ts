@@ -10,7 +10,7 @@ import bcrypt from "bcryptjs"
  */
 async function checkSuperAdmin() {
   const session = await auth()
-  if (session?.user?.email !== "admin@campovet.com") {
+  if (session?.user?.email !== "kteckti@gmail.com") {
     throw new Error("Acesso negado. Apenas o administrador central pode realizar esta ação.")
   }
   return session

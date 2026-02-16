@@ -37,7 +37,7 @@ export async function getPendingPaymentRequests() {
     // Em um sistema real, aqui teríamos uma role de SUPERADMIN
     // Por enquanto, vamos permitir que o GERENTE (dono da clínica) veja se for o admin do sistema
     // Ou validar pelo e-mail específico do admin
-    if (session?.user?.email !== "admin@campovet.com") {
+    if (session?.user?.email !== "kteckti@gmail.com") {
         throw new Error("Não autorizado")
     }
   }
@@ -64,7 +64,7 @@ export async function getPendingPaymentRequests() {
  */
 export async function approvePayment(requestId: string) {
   const session = await auth()
-  if (session?.user?.email !== "admin@campovet.com") throw new Error("Não autorizado")
+  if (session?.user?.email !== "kteckti@gmail.com") throw new Error("Não autorizado")
 
   try {
     const request = await db.paymentRequest.findUnique({

@@ -31,7 +31,7 @@ export default auth((req) => {
 
   // 3. Proteção da rota /admin (SuperAdmin)
   if (nextUrl.pathname.startsWith("/admin")) {
-    if (user?.email !== "admin@campovet.com") {
+    if (user?.email !== "kteckti@gmail.com") {
       // Se não for o admin central, redireciona para o dashboard dele
       return NextResponse.redirect(new URL("/", nextUrl))
     }
