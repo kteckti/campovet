@@ -14,10 +14,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         // Mapear dados do objeto user retornado pelo authorize para o token JWT
+        // IMPORTANTE: Converter objetos complexos (como Decimal do Prisma) para tipos primitivos
+        // Isso evita o erro "DataCloneError" ao tentar serializar o token
         token.role = (user as any).role
         token.tenantId = (user as any).tenantId
         token.tenantSlug = (user as any).tenantSlug
-        token.plan = (user as any).plan
+        
+        // Converter o plano para um objeto simples
+        if ((user as any).plan) {
+          const plan = (user as any).plan
+          token.plan = {
+            id: plan.id,
+            name: plan.name,
+            price: Number(plan.price), // Converter Decimal para Number
+            isPremium: plan.isPremium
+          }
+        }
+        
         token.modules = (user as any).modules
       }
       return token
@@ -60,7 +73,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
         })
 
-        // Log para depuração (visível no terminal do usuário)
         if (!user) {
           console.log("❌ Usuário não encontrado:", credentials.email)
           return null
@@ -81,7 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         }
 
-        // Retornar objeto completo que será capturado pelo callback JWT
+        // Retornar objeto que será capturado pelo callback JWT
         return {
           id: user.id,
           email: user.email,
