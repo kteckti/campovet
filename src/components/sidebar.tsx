@@ -115,15 +115,15 @@ export function Sidebar({ tenantSlug, activeModules, className }: SidebarProps) 
             </Link>
           </li>
 
-          {/* === ITEM ADICIONADO: ADMIN PAGAMENTOS (Apenas para o Admin Central) === */}
+          {/* === ITEM ADICIONADO: ADMIN CENTRAL (Apenas para o Admin Central) === */}
           {user?.email === "admin@campovet.com" && (
             <li>
               <Link 
-                href={`/${tenantSlug}/admin/pagamentos`}
+                href="/admin/clientes"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 transition-colors text-indigo-300 hover:text-indigo-200 border border-indigo-500/30"
               >
                 <ShieldCheck className="w-5 h-5" />
-                <span className="font-medium">Admin: Pagamentos</span>
+                <span className="font-medium">Painel Central</span>
               </Link>
             </li>
           )}
