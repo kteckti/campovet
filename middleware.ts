@@ -7,6 +7,7 @@ const { auth } = NextAuth(authConfig)
 export default auth((req) => {
   const isLoggedIn = !!req.auth
   const { nextUrl } = req
+  const user = req.auth?.user as any
   
   // 1. Permitir acesso a rotas públicas
   const isPublicRoute = nextUrl.pathname === "/" || nextUrl.pathname === "/login" || nextUrl.pathname === "/register"
@@ -23,8 +24,8 @@ export default auth((req) => {
   const pathParts = nextUrl.pathname.split("/")
   
   if (pathParts.length >= 3) {
-    const userModules = (req.auth?.user as any)?.modules || []
-    const userPlan = (req.auth?.user as any)?.plan
+    const userModules = user?.modules || []
+    const userPlan = user?.plan
     const requestedModule = pathParts[2]
     
     const moduleMapping: Record<string, string> = {
@@ -42,7 +43,9 @@ export default auth((req) => {
       const hasAccess = userPlan?.isPremium || userModules.includes(moduleId)
       
       if (!hasAccess) {
-        return NextResponse.redirect(new URL("/dashboard/modules?error=unauthorized", nextUrl))
+        // Se não tem acesso, manda para o dashboard principal do tenant
+        const tenantSlug = user?.tenantSlug || "dashboard"
+        return NextResponse.redirect(new URL(`/${tenantSlug}/dashboard`, nextUrl))
       }
     }
   }

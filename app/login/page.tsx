@@ -37,7 +37,9 @@ export default function LoginPage() {
         } else {
           router.push("/")
         }
-        router.refresh()
+        // Removido o refresh para evitar loops de recarregamento
+        // router.refresh() 
+
       }
     } catch (err) {
       setError("Ocorreu um erro ao tentar entrar")
