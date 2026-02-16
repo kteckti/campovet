@@ -72,9 +72,6 @@ model MedicalRecord {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
-// === MODELS ===
-
-
 
 model Tenant {
   id          String   @id @default(cuid())
@@ -100,6 +97,25 @@ model Tenant {
 
   appointments    Appointment[]
   medicalRecords  MedicalRecord[]
+
+  // Dados Módulo Equinos
+  equineAnimals EquineAnimal[]
+  reproductiveCycles ReproductiveCycle[]
+  semenCollections SemenCollection[]
+  inseminations Insemination[]
+
+  // Dados Módulo Gado Leiteiro
+  dairyAnimals DairyAnimal[]
+  lactationCycles LactationCycle[]
+  milkProductions MilkProduction[]
+
+  // Dados Módulo Gado de Corte
+  beefAnimals BeefAnimal[]
+  beefLots BeefLot[]
+  weighings Weighing[]
+
+  // Dados Módulo Pet Sitter
+  petSitterAppointments PetSitterAppointment[]
 }
 
 model User {
@@ -164,13 +180,11 @@ model Pet {
   weight      Float?
   birthDate   DateTime?
   
-  // NOVOS CAMPOS DE SAÚDE
-  allergies   String?  // Ex: "Alergia a Frango"
-  foodRestrictions String? // Ex: "Ração Hipoalergênica apenas"
-  vetName     String?  // Nome do Veterinário externo
-  vetPhone    String?  // Telefone do Vet
-  notes       String?  // Observações gerais de comportamento
-  
+  allergies   String?  
+  foodRestrictions String? 
+  vetName     String?  
+  vetPhone    String?  
+  notes       String?  
 
   ownerId     String
   owner       Customer @relation(fields: [ownerId], references: [id])
@@ -178,8 +192,9 @@ model Pet {
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   
   bookings    Booking[]
-  medications PetMedication[] // Relação com remédios
-  logs        PetLog[]        // Relação com histórico
+  medications PetMedication[] 
+  logs        PetLog[]
+  petSitterAppointments PetSitterAppointment[]        
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -190,9 +205,9 @@ model Pet {
 
 model PetMedication {
   id          String   @id @default(cuid())
-  name        String   // Ex: "Apoquel"
-  dosage      String   // Ex: "1/2 comprimido"
-  frequency   String   // Ex: "A cada 12h"
+  name        String   
+  dosage      String   
+  frequency   String   
   startDate   DateTime?
   endDate     DateTime?
   active      Boolean  @default(true)
@@ -202,11 +217,10 @@ model PetMedication {
   createdAt   DateTime @default(now())
 }
 
-// NOVO MODEL: Diário de Bordo (Logs)
 model PetLog {
   id          String   @id @default(cuid())
-  type        String   // FOOD, MEDICINE, EXERCISE, HEALTH, OBSERVATION
-  description String   // "Comeu tudo", "Tomou remédio", "Vomitou"
+  type        String   
+  description String   
   date        DateTime @default(now())
   performedBy String?
 
@@ -218,27 +232,22 @@ model PetLog {
 model Kennel {
   id          String      @id @default(cuid())
   name        String
-  
-  // ADICIONE ESTE CAMPO NOVO:
-  size        String?     // Tamanho (P, M, G)
+  size        String?     
   dailyRate   Decimal     @default(0.0) @db.Decimal(10, 2)
-
   status      String      @default("AVAILABLE") 
   tenantId    String
   tenant      Tenant      @relation(fields: [tenantId], references: [id])
   bookings    Booking[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
   capacity    Int      @default(1)
 }
 
 model Booking {
   id          String    @id @default(cuid())
-  
-  startDate   DateTime  @default(now()) // Hora que entrou
-  endDate     DateTime? // Hora que saiu (Null = ainda está lá)
-  status      String    @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  startDate   DateTime  @default(now()) 
+  endDate     DateTime? 
+  status      String    @default("ACTIVE") 
 
   totalCost   Decimal?  @db.Decimal(10, 2)
   
@@ -261,7 +270,7 @@ model Booking {
 
 model Service {
   id          String   @id @default(cuid())
-  name        String   // Ex: "Banho", "Tosa"
+  name        String   
   price       Decimal  @db.Decimal(10, 2)
   
   tenantId    String
@@ -270,6 +279,7 @@ model Service {
   bookingServices BookingService[]
 
   appointments Appointment[]
+  petSitterAppointments PetSitterAppointment[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -277,7 +287,7 @@ model Service {
 
 model BookingService {
   id          String   @id @default(cuid())
-  price       Decimal  @db.Decimal(10, 2) // Salva o preço no momento da adição
+  price       Decimal  @db.Decimal(10, 2) 
   createdAt   DateTime @default(now())
 
   bookingId   String
@@ -285,6 +295,183 @@ model BookingService {
   
   serviceId   String
   service     Service  @relation(fields: [serviceId], references: [id])
+}
+
+// === MÓDULO REPRODUÇÃO DE EQUINOS ===
+
+model EquineAnimal {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // STALLION (Garanhão), DONOR (Doadora), RECIPIENT (Receptora)
+  breed       String?
+  birthDate   DateTime?
+  registerNum String?
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  semenCollections SemenCollection[]
+  cycles          ReproductiveCycle[]
+  inseminations   Insemination[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ReproductiveCycle {
+  id          String   @id @default(cuid())
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  status      String   @default("OPEN") // OPEN, CLOSED, PREGNANT
+
+  animalId    String
+  animal      EquineAnimal @relation(fields: [animalId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  inseminations Insemination[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SemenCollection {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  volume      Float?   // ml
+  concentration Int?   // espermatozoides/ml
+  motility    Float?   // %
+  observations String?
+
+  stallionId  String
+  stallion    EquineAnimal @relation(fields: [stallionId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Insemination {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  type        String   // ARTIFICIAL, NATURAL
+  observations String?
+
+  cycleId     String
+  cycle       ReproductiveCycle @relation(fields: [cycleId], references: [id])
+  
+  mareId      String
+  mare        EquineAnimal @relation(fields: [mareId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// === MÓDULO GADO LEITEIRO ===
+
+model DairyAnimal {
+  id          String   @id @default(cuid())
+  tag         String   // Brinco/Identificação
+  name        String?
+  breed       String?
+  birthDate   DateTime?
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  lactations  LactationCycle[]
+  productions MilkProduction[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LactationCycle {
+  id          String   @id @default(cuid())
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  status      String   @default("ACTIVE") // ACTIVE, DRY
+
+  animalId    String
+  animal      DairyAnimal @relation(fields: [animalId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MilkProduction {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  amount      Float    // Litros
+  period      String?  // MANHA, TARDE
+
+  animalId    String
+  animal      DairyAnimal @relation(fields: [animalId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// === MÓDULO GADO DE CORTE (ENGORDA) ===
+
+model BeefLot {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  animals     BeefAnimal[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BeefAnimal {
+  id          String   @id @default(cuid())
+  tag         String   
+  breed       String?
+  initialWeight Float?
+  targetWeight  Float?
+
+  lotId       String?
+  lot         BeefLot? @relation(fields: [lotId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  weighings   Weighing[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Weighing {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  weight      Float
+  
+  animalId    String
+  animal      BeefAnimal @relation(fields: [animalId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // FINANCEIRO
@@ -295,39 +482,85 @@ model Transaction {
   description String
   date        DateTime @default(now())
   
-  module      String   @default("CRECHE") // "CRECHE", "CLINICA", "GERAL"
+  module      String   @default("CRECHE") // "CRECHE", "CLINICA", "EQUINOS", "LEITE", "CORTE", "GERAL"
   method      String   @default("PIX") // "PIX", "CREDITO", "DEBITO", "DINHEIRO"
 
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
-  // Opcional: para saber de qual reserva veio esse dinheiro
   bookingId   String?  
   booking     Booking? @relation(fields: [bookingId], references: [id])
-
+  
   appointmentId String?
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  
+  petSitterAppointmentId String?
+  petSitterAppointment   PetSitterAppointment? @relation(fields: [petSitterAppointmentId], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
 model Product {
   id          String   @id @default(cuid())
   name        String
   description String?
   
-  quantity    Int      @default(0)   // Quantidade atual
-  minStock    Int      @default(5)   // Estoque mínimo para alerta
+  quantity    Int      @default(0)   
+  minStock    Int      @default(5)   
   
-  price       Decimal  @db.Decimal(10, 2) // Preço de Venda (se for vendido)
-  costPrice   Decimal? @db.Decimal(10, 2) // Custo (para relatório de lucro)
+  price       Decimal  @db.Decimal(10, 2) 
+  costPrice   Decimal? @db.Decimal(10, 2) 
   
-  unit        String   @default("UN") // UN, ML, KG, CX
-  expiryDate  DateTime? // Validade
+  unit        String   @default("UN") 
+  expiryDate  DateTime? 
 
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// === MÓDULO PET SITTER ===
+
+model PetSitterAppointment {
+  id          String   @id @default(cuid())
+  date        DateTime
+  time        String   // Horário da visita (ex: "14:30")
+  status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELED
+  
+  // Informações de localização e combustível
+  address     String?  // Endereço específico (se diferente do cadastro)
+  distanceKm  Decimal? @db.Decimal(10, 2) // Distância em KM
+  fuelCost    Decimal? @db.Decimal(10, 2) // Custo calculado de combustível
+  
+  // Recorrência
+  isRecurring Boolean  @default(false)
+  recurrencePattern String? // Ex: "WEEKLY_WED" (toda quarta), "WEEKLY_MON_FRI" (segunda e sexta)
+  recurrenceEndDate DateTime? // Data final da recorrência
+  parentAppointmentId String? // ID do agendamento pai (se for uma ocorrência de recorrência)
+  
+  // Financeiro
+  serviceValue Decimal  @db.Decimal(10, 2) // Valor do serviço
+  totalCost    Decimal  @db.Decimal(10, 2) // Valor total (serviço + combustível)
+  isPaid       Boolean  @default(false)
+  paymentMethod String? // PIX, CREDITO, DEBITO, DINHEIRO
+  
+  notes       String?  @db.Text // Observações e instruções
+  
+  // Relacionamentos
+  petId       String
+  pet         Pet      @relation(fields: [petId], references: [id])
+  
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  transactions Transaction[]
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
