@@ -97,9 +97,15 @@ export async function registerTenant(formData: any) {
 }
 
 export async function getPlans() {
-  return await db.plan.findMany({
+  const plans = await db.plan.findMany({
     orderBy: { price: 'asc' }
   })
+  
+  // Converter Decimal para Number para evitar erro de serialização no Next.js
+  return plans.map(plan => ({
+    ...plan,
+    price: Number(plan.price)
+  }))
 }
 
 export async function getModules() {

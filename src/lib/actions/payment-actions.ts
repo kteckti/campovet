@@ -34,15 +34,12 @@ export async function requestPaymentConfirmation(amount: number) {
 export async function getPendingPaymentRequests() {
   const session = await auth()
   if (!session?.user || (session.user as any).role !== "GERENTE") {
-    // Em um sistema real, aqui teríamos uma role de SUPERADMIN
-    // Por enquanto, vamos permitir que o GERENTE (dono da clínica) veja se for o admin do sistema
-    // Ou validar pelo e-mail específico do admin
     if (session?.user?.email !== "kteckti@gmail.com") {
         throw new Error("Não autorizado")
     }
   }
 
-  return await db.paymentRequest.findMany({
+  const requests = await db.paymentRequest.findMany({
     where: { status: "PENDING" },
     include: {
       tenant: {
@@ -57,6 +54,16 @@ export async function getPendingPaymentRequests() {
     },
     orderBy: { requestedAt: "desc" }
   })
+
+  // Converter Decimal para Number
+  return requests.map(req => ({
+    ...req,
+    amount: Number(req.amount),
+    tenant: {
+      ...req.tenant,
+      plan: req.tenant.plan ? { ...req.tenant.plan, price: Number(req.tenant.plan.price) } : null
+    }
+  }))
 }
 
 /**

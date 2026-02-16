@@ -21,7 +21,7 @@ async function checkSuperAdmin() {
  */
 export async function getAllTenants() {
   await checkSuperAdmin()
-  return await db.tenant.findMany({
+  const tenants = await db.tenant.findMany({
     include: {
       plan: true,
       users: {
@@ -34,6 +34,12 @@ export async function getAllTenants() {
     },
     orderBy: { createdAt: "desc" }
   })
+
+  // Converter Decimal para Number para evitar erro de serialização
+  return tenants.map(tenant => ({
+    ...tenant,
+    plan: tenant.plan ? { ...tenant.plan, price: Number(tenant.plan.price) } : null
+  }))
 }
 
 /**
@@ -108,13 +114,19 @@ export async function resetUserPassword(userId: string, newPassword: string) {
  */
 export async function getPaymentHistory() {
   await checkSuperAdmin()
-  return await db.paymentRequest.findMany({
+  const history = await db.paymentRequest.findMany({
     where: { status: "APPROVED" },
     include: {
       tenant: true
     },
     orderBy: { processedAt: "desc" }
   })
+
+  // Converter Decimal para Number
+  return history.map(item => ({
+    ...item,
+    amount: Number(item.amount)
+  }))
 }
 
 /**
