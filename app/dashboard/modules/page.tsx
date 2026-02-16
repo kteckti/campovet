@@ -9,6 +9,12 @@ export default async function ModulesPage() {
   if (!session) redirect("/login")
 
   const user = session.user as any
+  
+  // Verificação de segurança para evitar erro de undefined
+  if (!user || !user.tenantSlug) {
+    redirect("/login")
+  }
+
   const tenantSlug = user.tenantSlug
   const activeModules = user.modules || []
   const isPremium = user.plan?.isPremium
