@@ -25,52 +25,70 @@ async function main() {
   }
   console.log('✅ Módulos garantidos')
 
-  // 2. Criar Planos
+  // 2. Criar Planos Conforme Solicitação
+  
+  // Plano Essencial — R$ 149/mês (1 módulo)
   await prisma.plan.upsert({
-    where: { id: 'plan_premium' },
-    update: {},
+    where: { id: 'plan_essencial' },
+    update: { price: 149.00 },
     create: {
-      id: 'plan_premium',
-      name: 'Premium',
-      description: 'Acesso total a todos os módulos',
-      price: 299.90,
-      isPremium: true,
-      allowedModules: []
-    }
-  })
-
-  await prisma.plan.upsert({
-    where: { id: 'plan_pet_sitter' },
-    update: {},
-    create: {
-      id: 'plan_pet_sitter',
-      name: 'Pet Sitter Individual',
-      description: 'Acesso exclusivo ao módulo Pet Sitter',
-      price: 49.90,
+      id: 'plan_essencial',
+      name: 'Essencial',
+      description: '1 módulo à escolha + Suporte básico',
+      price: 149.00,
       isPremium: false,
-      allowedModules: ['mod_pet_sitter']
+      allowedModules: [] // Será definido no registro
     }
   })
-  console.log('✅ Planos criados')
 
-  // 3. Criar Tenant de Teste
+  // Plano Profissional — R$ 349/mês (Até 3 módulos)
+  await prisma.plan.upsert({
+    where: { id: 'plan_profissional' },
+    update: { price: 349.00 },
+    create: {
+      id: 'plan_profissional',
+      name: 'Profissional',
+      description: 'Até 3 módulos + Relatórios avançados + Suporte prioritário',
+      price: 349.00,
+      isPremium: false,
+      allowedModules: [] // Será definido no registro
+    }
+  })
+
+  // Plano Enterprise — R$ 599/mês (Todos os módulos)
+  await prisma.plan.upsert({
+    where: { id: 'plan_enterprise' },
+    update: { price: 599.00 },
+    create: {
+      id: 'plan_enterprise',
+      name: 'Enterprise',
+      description: 'Todos os módulos + Multi-unidade + Usuários ilimitados + Suporte premium',
+      price: 599.00,
+      isPremium: true,
+      allowedModules: allModules.map(m => m.id)
+    }
+  })
+
+  console.log('✅ Planos atualizados')
+
+  // 3. Criar Tenant de Teste (Clínica Silva)
   const tenant = await prisma.tenant.upsert({
     where: { slug: 'clinica-silva' },
     update: { 
-      planId: 'plan_premium', 
+      planId: 'plan_enterprise', 
       subscriptionStatus: 'ACTIVE' 
     },
     create: {
       name: 'Clínica Veterinária Silva',
       slug: 'clinica-silva',
       document: '12345678000199',
-      planId: 'plan_premium',
+      planId: 'plan_enterprise',
       subscriptionStatus: 'ACTIVE'
     }
   })
   console.log(`✅ Tenant: ${tenant.name}`)
 
-  // 4. Ativar Módulos para o Tenant
+  // 4. Ativar Módulos para o Tenant de Teste
   for (const mod of allModules) {
     await prisma.tenantModule.upsert({
       where: {
@@ -104,10 +122,6 @@ async function main() {
   })
 
   console.log('✅ Seed finalizado com sucesso!')
-  console.log('---------------------------------')
-  console.log('📧 E-mail: admin@campovet.com')
-  console.log('🔑 Senha: 123456')
-  console.log('---------------------------------')
 }
 
 main()
