@@ -2,18 +2,19 @@
 
 import { useState } from "react"
 import { grantManualAccess, resetUserPassword } from "@/src/lib/actions/admin-actions"
-import { Key, Gift, Loader2, Check, X } from "lucide-react"
+import { Key, Gift, Loader2, Check, X, Edit2 } from "lucide-react"
+import { EditTenantModal } from "./edit-tenant-modal"
 
 interface ClientActionsProps {
+  tenant: any
   tenantId: string
   tenantName: string
   adminUserId?: string
   adminEmail?: string
 }
 
-export function ClientActions({ tenantId, tenantName, adminUserId, adminEmail }: ClientActionsProps) {
-  const [isGranting, setIsGranting] = useState(false)
-  const [isResetting, setIsResetting] = useState(false)
+export function ClientActions({ tenant, tenantId, tenantName, adminUserId, adminEmail }: ClientActionsProps) {
+  const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleGrantAccess = async () => {
@@ -64,6 +65,16 @@ export function ClientActions({ tenantId, tenantName, adminUserId, adminEmail }:
   return (
     <div className="flex gap-2">
       <button
+        onClick={() => setIsEditing(true)}
+        disabled={isLoading}
+        className="flex items-center gap-2 bg-white text-gray-700 border border-gray-200 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-all disabled:opacity-50 shadow-sm"
+        title="Editar dados da empresa"
+      >
+        <Edit2 size={16} />
+        Editar
+      </button>
+
+      <button
         onClick={handleGrantAccess}
         disabled={isLoading}
         className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all disabled:opacity-50 shadow-sm"
@@ -82,6 +93,13 @@ export function ClientActions({ tenantId, tenantName, adminUserId, adminEmail }:
         {isLoading ? <Loader2 className="animate-spin" size={16} /> : <Key size={16} />}
         Resetar Senha
       </button>
+
+      {isEditing && (
+        <EditTenantModal 
+          tenant={tenant} 
+          onClose={() => setIsEditing(false)} 
+        />
+      )}
     </div>
   )
 }

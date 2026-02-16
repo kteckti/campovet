@@ -116,3 +116,47 @@ export async function getPaymentHistory() {
     orderBy: { processedAt: "desc" }
   })
 }
+
+/**
+ * Atualiza os dados de uma empresa (Tenant)
+ */
+export async function updateTenant(tenantId: string, data: {
+  name: string,
+  slug: string,
+  document: string | null,
+  planId: string | null,
+  subscriptionStatus: string
+}) {
+  await checkSuperAdmin()
+
+  try {
+    // Verificar se o novo slug já existe em outro tenant
+    const existingTenant = await db.tenant.findFirst({
+      where: {
+        slug: data.slug,
+        NOT: { id: tenantId }
+      }
+    })
+
+    if (existingTenant) {
+      return { error: "Este slug já está sendo usado por outra empresa." }
+    }
+
+    await db.tenant.update({
+      where: { id: tenantId },
+      data: {
+        name: data.name,
+        slug: data.slug,
+        document: data.document,
+        planId: data.planId,
+        subscriptionStatus: data.subscriptionStatus
+      }
+    })
+
+    revalidatePath("/admin/clientes")
+    return { success: true }
+  } catch (error) {
+    console.error("Erro ao atualizar empresa:", error)
+    return { error: "Erro ao atualizar os dados da empresa." }
+  }
+}

@@ -52,6 +52,7 @@ export default async function AdminClientesPage() {
 
                 <div className="flex items-center gap-3">
                   <ClientActions 
+                    tenant={tenant}
                     tenantId={tenant.id} 
                     tenantName={tenant.name}
                     adminUserId={adminUser?.id}
