@@ -84,7 +84,7 @@ export default async function FinanceiroPetSitterPage({ params }: PageProps) {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-6 no-print">
         <Link 
           href={`/${tenantId}/pet-sitter`}
           className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium"
@@ -93,7 +93,7 @@ export default async function FinanceiroPetSitterPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <div>
+      <div className="no-print">
         <h1 className="text-3xl font-bold text-gray-800">Organização Financeira</h1>
         <p className="text-gray-500 mt-1">Gestão de valores a receber e gastos com combustível.</p>
       </div>
