@@ -13,6 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // Mapear dados do objeto user retornado pelo authorize para o token JWT
         token.role = (user as any).role
         token.tenantId = (user as any).tenantId
         token.tenantSlug = (user as any).tenantSlug
@@ -23,6 +24,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }: any) {
       if (token && session.user) {
+        // Mapear dados do token JWT para a sessão do frontend
         session.user.id = token.sub
         session.user.role = token.role
         session.user.tenantId = token.tenantId
@@ -35,7 +37,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   ...authConfig,
   providers: [
-    ...authConfig.providers,
     {
       id: "credentials",
       name: "Credentials",
@@ -59,15 +60,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
         })
 
-        if (!user || !user.password) return null
+        // Log para depuração (visível no terminal do usuário)
+        if (!user) {
+          console.log("❌ Usuário não encontrado:", credentials.email)
+          return null
+        }
+
+        if (!user.password) {
+          console.log("❌ Usuário sem senha configurada")
+          return null
+        }
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password as string,
           user.password
         )
 
-        if (!isPasswordValid) return null
+        if (!isPasswordValid) {
+          console.log("❌ Senha incorreta para:", credentials.email)
+          return null
+        }
 
+        // Retornar objeto completo que será capturado pelo callback JWT
         return {
           id: user.id,
           email: user.email,
