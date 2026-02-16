@@ -1,5 +1,8 @@
-import { auth } from "./auth"
+import NextAuth from "next-auth"
+import authConfig from "./auth.config"
 import { NextResponse } from "next/server"
+
+const { auth } = NextAuth(authConfig)
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth
@@ -16,14 +19,12 @@ export default auth((req) => {
 
   // 3. Validação de Módulos (Ex: /clinica-silva/pet-sitter/...)
   const pathParts = nextUrl.pathname.split("/")
-  // pathParts[1] = tenantSlug, pathParts[2] = moduleName
   
   if (pathParts.length >= 3) {
     const userModules = (req.auth?.user as any)?.modules || []
     const userPlan = (req.auth?.user as any)?.plan
     const requestedModule = pathParts[2]
     
-    // Mapeamento de rotas para IDs de módulos
     const moduleMapping: Record<string, string> = {
       "pet-sitter": "mod_pet_sitter",
       "creche": "mod_creche",
@@ -39,17 +40,9 @@ export default auth((req) => {
       const hasAccess = userPlan?.isPremium || userModules.includes(moduleId)
       
       if (!hasAccess) {
-        // Redirecionar para dashboard se não tiver acesso ao módulo
         return NextResponse.redirect(new URL("/dashboard/modules?error=unauthorized", nextUrl))
       }
     }
-  }
-
-  // 4. Validação de Inadimplência (Past Due)
-  const subscriptionStatus = (req.auth?.user as any)?.tenant?.subscriptionStatus
-  if (subscriptionStatus === "PAST_DUE" && !nextUrl.pathname.includes("/billing")) {
-    // Permitir apenas acesso à página de faturamento se estiver atrasado
-    // return NextResponse.redirect(new URL("/billing", nextUrl))
   }
 
   return NextResponse.next()

@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { db } from "@/src/lib/db"
-import Credentials from "next-auth/providers/credentials"
+import authConfig from "./auth.config"
 import bcrypt from "bcryptjs"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -10,9 +10,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
   },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = (user as any).role
+        token.tenantId = (user as any).tenantId
+        token.tenantSlug = (user as any).tenantSlug
+        token.plan = (user as any).plan
+        token.modules = (user as any).modules
+      }
+      return token
+    },
+    async session({ session, token }: any) {
+      if (token && session.user) {
+        session.user.id = token.sub
+        session.user.role = token.role
+        session.user.tenantId = token.tenantId
+        session.user.tenantSlug = token.tenantSlug
+        session.user.plan = token.plan
+        session.user.modules = token.modules
+      }
+      return session
+    }
+  },
+  ...authConfig,
   providers: [
-    Credentials({
+    ...authConfig.providers,
+    {
+      id: "credentials",
       name: "Credentials",
+      type: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
@@ -22,7 +49,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await db.user.findUnique({
           where: { email: credentials.email as string },
-          include: { tenant: { include: { plan: true, modules: true } } }
+          include: { 
+            tenant: { 
+              include: { 
+                plan: true, 
+                modules: true 
+              } 
+            } 
+          }
         })
 
         if (!user || !user.password) return null
@@ -45,29 +79,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           modules: user.tenant.modules.map(m => m.moduleId)
         }
       }
-    })
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role
-        token.tenantId = (user as any).tenantId
-        token.tenantSlug = (user as any).tenantSlug
-        token.plan = (user as any).plan
-        token.modules = (user as any).modules
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (token) {
-        (session.user as any).id = token.sub
-        (session.user as any).role = token.role
-        (session.user as any).tenantId = token.tenantId
-        (session.user as any).tenantSlug = token.tenantSlug
-        (session.user as any).plan = token.plan
-        (session.user as any).modules = token.modules
-      }
-      return session
     }
-  }
+  ]
 })
