@@ -36,7 +36,7 @@ export function Sidebar({ tenantSlug, activeModules, className, isOpen, onClose 
         {/* Logo e Botão Fechar (Mobile) */}
         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold tracking-tight">Vet<span className="text-blue-400">Manager</span></h2>
+            <h2 className="text-xl font-bold tracking-tight">Campo<span className="text-blue-400">Vet</span></h2>
             <p className="text-xs text-slate-400 mt-1">ERP Integrado</p>
           </div>
           {/* Botão X só aparece no mobile */}

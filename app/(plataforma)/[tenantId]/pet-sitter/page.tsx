@@ -10,6 +10,10 @@ import {
   DollarSign
 } from "lucide-react"
 import { DashboardClient } from "./dashboard-client"
+// 1. Importar o Modal de Novo Paciente (reutilizando o da clínica ou criando um compartilhado)
+// Se o arquivo estiver em /clinica/components, o ideal seria movê-lo para /components/shared
+// Mas vou assumir que você vai importar de onde ele está agora:
+import { NewPatientModal } from "./new-client-modal" 
 
 interface PageProps {
   params: Promise<{ tenantId: string }>
@@ -136,7 +140,7 @@ export default async function PetSitterPage({ params }: PageProps) {
           <p className="text-gray-500 mt-1">Gestão de visitas e cuidados em domicílio.</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Link 
             href={`/${tenantId}/pet-sitter/financeiro`}
             className="bg-green-600 border border-green-700 text-white hover:bg-green-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
@@ -147,8 +151,12 @@ export default async function PetSitterPage({ params }: PageProps) {
             href={`/${tenantId}/pet-sitter/agenda`}
             className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
           >
-            <Calendar size={18} /> Agenda de Visitas
+            <Calendar size={18} /> Agenda
           </Link>
+          
+          {/* 2. Botão de Novo Paciente (Modal) */}
+          <NewPatientModal tenantSlug={tenantId} />
+
           <Link 
             href={`/${tenantId}/pet-sitter/novo`}
             className="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
