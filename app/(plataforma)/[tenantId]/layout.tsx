@@ -1,7 +1,6 @@
-import { Sidebar } from "@/src/components/sidebar"
-import { SubscriptionAlert } from "@/src/components/subscription-alert"
 import { db } from "@/src/lib/db"
 import { redirect } from "next/navigation"
+import { LayoutShell } from "@/src/components/layout-shell" // <--- Importe o novo componente
 
 interface LayoutProps {
   children: React.ReactNode
@@ -17,7 +16,7 @@ export default async function TenantLayout({ children, params }: LayoutProps) {
     where: { slug: tenantId },
     include: {
       modules: {
-        where: { isActive: true }, // Só queremos os ativos
+        where: { isActive: true }, 
       }
     }
   })
@@ -27,30 +26,17 @@ export default async function TenantLayout({ children, params }: LayoutProps) {
     redirect("/")
   }
 
-  // Extrair apenas os IDs dos módulos (ex: ['mod_creche', 'mod_clinica'])
+  // Extrair apenas os IDs dos módulos
   const activeModuleIds = tenant.modules.map((m) => m.moduleId)
 
+  // 3. Renderizar o Shell do Cliente (que tem o estado da sidebar)
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden">
-      {/* Sidebar Fixa à Esquerda */}
-      <Sidebar 
-        tenantSlug={tenantId} 
-        activeModules={activeModuleIds} 
-      />
-      <SubscriptionAlert />
-
-      {/* Área Principal de Conteúdo */}
-      <main className="flex-1 overflow-y-auto">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-8 shadow-sm">
-           <h1 className="font-semibold text-lg text-gray-700">
-             {tenant.name}
-           </h1>
-        </header>
-        
-        <div className="p-8">
-          {children}
-        </div>
-      </main>
-    </div>
+    <LayoutShell 
+      tenantSlug={tenantId}
+      activeModules={activeModuleIds}
+      tenantName={tenant.name}
+    >
+      {children}
+    </LayoutShell>
   )
 }
