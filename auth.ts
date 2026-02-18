@@ -3,9 +3,11 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { db } from "@/src/lib/db"
 import authConfig from "./auth.config"
 import bcrypt from "bcryptjs"
+// Importação do tipo Adapter para corrigir o erro anterior
+import type { Adapter } from "next-auth/adapters"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(db),
+  adapter: PrismaAdapter(db) as Adapter,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -13,31 +15,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // Mapear dados do objeto user retornado pelo authorize para o token JWT
-        // IMPORTANTE: Converter objetos complexos (como Decimal do Prisma) para tipos primitivos
-        // Isso evita o erro "DataCloneError" ao tentar serializar o token
         token.role = (user as any).role
         token.tenantId = (user as any).tenantId
         token.tenantSlug = (user as any).tenantSlug
-        
-        // Converter o plano para um objeto simples
-        if ((user as any).plan) {
-          const plan = (user as any).plan
-          token.plan = {
-            id: plan.id,
-            name: plan.name,
-            price: Number(plan.price), // Converter Decimal para Number
-            isPremium: plan.isPremium
-          }
-        }
-        
+        token.plan = (user as any).plan 
         token.modules = (user as any).modules
       }
       return token
     },
     async session({ session, token }: any) {
       if (token && session.user) {
-        // Mapear dados do token JWT para a sessão do frontend
         session.user.id = token.sub
         session.user.role = token.role
         session.user.tenantId = token.tenantId
@@ -74,12 +61,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         })
 
         if (!user) {
-          console.log("❌ Usuário não encontrado:", credentials.email)
           return null
         }
 
         if (!user.password) {
-          console.log("❌ Usuário sem senha configurada")
           return null
         }
 
@@ -89,11 +74,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         )
 
         if (!isPasswordValid) {
-          console.log("❌ Senha incorreta para:", credentials.email)
           return null
         }
 
-        // Retornar objeto que será capturado pelo callback JWT
+        // --- CORREÇÃO AQUI ---
+        // Prepara o objeto do plano convertendo Decimal para Number e tratando null/undefined
+        let planFormatted = undefined;
+        
+        if (user.tenant.plan) {
+          planFormatted = {
+            id: user.tenant.plan.id,
+            name: user.tenant.plan.name,
+            // O Prisma retorna Decimal, o NextAuth precisa de Number
+            price: Number(user.tenant.plan.price), 
+            isPremium: user.tenant.plan.isPremium
+          };
+        }
+
+        // Retornar objeto limpo e tipado corretamente
         return {
           id: user.id,
           email: user.email,
@@ -101,7 +99,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           tenantId: user.tenantId,
           tenantSlug: user.tenant.slug,
-          plan: user.tenant.plan,
+          plan: planFormatted, // Agora envia o objeto formatado ou undefined
           modules: user.tenant.modules.map(m => m.moduleId)
         }
       }
