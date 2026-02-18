@@ -52,7 +52,7 @@ export default async function EditarPetSitterPage({ params }: PageProps) {
     serviceId: appointment.serviceId,
     date: appointment.date.toISOString().split('T')[0],
     time: appointment.time,
-    distanceKm: appointment.distanceKm.toString(),
+    distanceKm: appointment.distanceKm?.toString() || "0",
     address: appointment.address || "",
     notes: appointment.notes || "",
     isRecurring: appointment.isRecurring,

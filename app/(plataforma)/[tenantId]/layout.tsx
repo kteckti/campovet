@@ -1,4 +1,5 @@
 import { Sidebar } from "@/src/components/sidebar"
+import { SubscriptionAlert } from "@/src/components/subscription-alert"
 import { db } from "@/src/lib/db"
 import { redirect } from "next/navigation"
 
@@ -36,6 +37,7 @@ export default async function TenantLayout({ children, params }: LayoutProps) {
         tenantSlug={tenantId} 
         activeModules={activeModuleIds} 
       />
+      <SubscriptionAlert />
 
       {/* Área Principal de Conteúdo */}
       <main className="flex-1 overflow-y-auto">
