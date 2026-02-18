@@ -22,6 +22,11 @@ import {
 import Link from "next/link"
 import { registerTenant, getPlans, getModules } from "@/src/lib/actions/register-actions"
 
+// Regex para validações
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\W]{8,}$/ // Mínimo 8 chars, 1 maiúscula, 1 minúscula, 1 número
+const CLINIC_NAME_REGEX = /^[a-zA-Z0-9 ]+$/ // Apenas letras, números e espaços
+
 export default function RegisterPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
@@ -88,8 +93,69 @@ export default function RegisterPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Função de Validação do Passo 1
+  const validateStep1 = () => {
+    // 1. Validar Nome
+    if (formData.name.trim().length < 3) {
+      setError("O nome completo deve ter pelo menos 3 caracteres.")
+      return false
+    }
+
+    // 2. Validar E-mail
+    if (!EMAIL_REGEX.test(formData.email)) {
+      setError("Por favor, insira um e-mail válido.")
+      return false
+    }
+
+    // 3. Validar Telefone (Remove chars não numéricos e checa tamanho)
+    const phoneClean = formData.phone.replace(/\D/g, "")
+    if (phoneClean.length < 10 || phoneClean.length > 11) {
+      setError("O telefone deve ter 10 ou 11 dígitos (DDD + Número).")
+      return false
+    }
+
+    // 4. Validar CPF/CNPJ
+    const docClean = formData.document.replace(/\D/g, "")
+    if (docClean.length !== 11 && docClean.length !== 14) {
+      setError("O CPF deve ter 11 dígitos ou CNPJ 14 dígitos.")
+      return false
+    }
+
+    // 5. Validar Nome da Clínica (Sem caracteres especiais e Max 25 chars)
+    if (formData.clinicName.trim() === "") {
+        setError("O nome da clínica é obrigatório.")
+        return false
+    }
+    // --- NOVO: Limite de 25 caracteres ---
+    if (formData.clinicName.length > 25) {
+        setError("O nome da clínica deve ter no máximo 25 caracteres.")
+        return false
+    }
+    if (!CLINIC_NAME_REGEX.test(formData.clinicName)) {
+      setError("O nome da clínica não pode conter caracteres especiais (use apenas letras e números).")
+      return false
+    }
+
+    // 6. Validar Senha Forte
+    if (!PASSWORD_REGEX.test(formData.password)) {
+      setError("A senha deve ter no mínimo 8 caracteres, incluindo uma letra maiúscula, uma minúscula e um número.")
+      return false
+    }
+
+    setError("") // Limpa erros se tudo passar
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validação antes de avançar do passo 1
+    if (step === 1) {
+        if (!validateStep1()) {
+            return // Para aqui se a validação falhar
+        }
+    }
+
     if (step < 4) {
       setStep(step + 1)
       return
@@ -99,10 +165,17 @@ export default function RegisterPage() {
     setError("")
 
     try {
-      const result = await registerTenant(formData)
+      // Limpeza final dos dados antes de enviar (remove formatação de telefone/cpf)
+      const cleanData = {
+          ...formData,
+          phone: formData.phone.replace(/\D/g, ""),
+          document: formData.document.replace(/\D/g, "")
+      }
+
+      const result = await registerTenant(cleanData)
       if (result.error) {
         setError(result.error)
-        setStep(1)
+        setStep(1) // Volta pro passo 1 se der erro no backend
       } else {
         router.push("/login?registered=true")
       }
@@ -144,7 +217,7 @@ export default function RegisterPage() {
         <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
           <form onSubmit={handleSubmit} className="p-8 md:p-12">
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium text-center mb-8">
+              <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium text-center mb-8 animate-in fade-in slide-in-from-top-2">
                 {error}
               </div>
             )}
@@ -190,7 +263,14 @@ export default function RegisterPage() {
                         type="tel"
                         required
                         value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        onChange={(e) => {
+                            // Mascara simples enquanto digita
+                            let v = e.target.value.replace(/\D/g,"");
+                            v = v.replace(/^(\d{2})(\d)/g,"($1) $2");
+                            v = v.replace(/(\d)(\d{4})$/,"$1-$2");
+                            setFormData({...formData, phone: v})
+                        }}
+                        maxLength={15}
                         className="w-full bg-gray-50 border border-gray-200 rounded-xl px-12 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                         placeholder="(00) 00000-0000"
                       />
@@ -206,23 +286,30 @@ export default function RegisterPage() {
                         value={formData.document}
                         onChange={(e) => setFormData({...formData, document: e.target.value})}
                         className="w-full bg-gray-50 border border-gray-200 rounded-xl px-12 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                        placeholder="000.000.000-00"
+                        placeholder="Apenas números"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1">Nome da Empresa / Clínica</label>
+                    <label className="text-sm font-bold text-gray-700 ml-1">
+                      Nome da Empresa / Clínica <span className="text-xs font-normal text-gray-400">(Máx 25)</span>
+                    </label>
                     <div className="relative">
                       <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                       <input
                         type="text"
                         required
+                        maxLength={25} // --- NOVO: Limita digitação no input ---
                         value={formData.clinicName}
                         onChange={(e) => setFormData({...formData, clinicName: e.target.value})}
                         className="w-full bg-gray-50 border border-gray-200 rounded-xl px-12 py-4 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                        placeholder="Nome da sua clínica"
+                        placeholder="Sem caracteres especiais"
                       />
                     </div>
+                    <p className="text-xs text-gray-400 ml-1 flex justify-between">
+                      <span>Apenas letras e números.</span>
+                      <span>{formData.clinicName.length}/25</span>
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-gray-700 ml-1">Senha de Acesso</label>
@@ -237,6 +324,7 @@ export default function RegisterPage() {
                         placeholder="••••••••"
                       />
                     </div>
+                    <p className="text-xs text-gray-400 ml-1">Mínimo 8 caracteres, 1 maiúscula, 1 minúscula e 1 número.</p>
                   </div>
                 </div>
               </div>
