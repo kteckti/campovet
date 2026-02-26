@@ -25,7 +25,7 @@ export async function createPetSitterAppointment(tenantId: string, formData: For
   if (!service) throw new Error("Serviço não encontrado")
 
   const serviceValue = Number(service.price)
-  const fuelCostPerKm = 6.50 / 6 
+  const fuelCostPerKm = 6.50 / 8.5 
   const distance = distanceKm ? parseFloat(distanceKm) : 0
   const totalDistance = distance * 2
   const fuelCost = totalDistance * fuelCostPerKm
