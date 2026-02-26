@@ -25,53 +25,62 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Estilos para impressão do relatório financeiro */
+/* =========================================
+   REGRAS OTIMIZADAS PARA IMPRESSÃO / PDF
+   ========================================= */
+/* =========================================
+   REGRAS OTIMIZADAS PARA IMPRESSÃO / PDF
+   ========================================= */
 @media print {
-  /* Ocultar elementos desnecessários no PDF */
-  .no-print {
-    display: none !important;
+  /* 1. Formato da página e margens perfeitas */
+  @page {
+    size: A4 portrait; /* Força o formato A4 */
+    margin: 1.5cm; /* Margem padrão de documento */
   }
-  
-  /* Remover scroll do resumo de atendimentos */
-  .print-full-height {
-    max-height: none !important;
-    overflow: visible !important;
-  }
-  
-  /* Garantir que a página seja impressa corretamente */
-  body {
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Evitar quebras de página dentro de elementos importantes */
-  .print-avoid-break {
-    page-break-inside: avoid;
-  }
-}
 
-/* Estilos adicionais para melhorar a impressão */
-@media print {
-  /* Remover fundo colorido do container do relatório */
-  .print-avoid-break {
-    background: white !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
+  /* 2. Zera os paddings do layout principal que empurram o PDF para o lado */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
-  
-  /* Ajustar o container interno */
-  .print-avoid-break > div {
-    background: white !important;
-    padding: 20px !important;
+
+  /* 3. Libera o tamanho da página para criar múltiplas folhas */
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background-color: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  
-  /* Garantir que a tabela seja visível */
+
+  /* 4. Anula as classes do Tailwind que travam a tela */
+  .h-screen, .min-h-screen, .max-h-screen { 
+    height: auto !important; 
+    min-height: 0 !important;
+  }
+  .overflow-hidden, .overflow-y-auto { 
+    overflow: visible !important; 
+  }
+  .flex-1 { display: block !important; flex: none !important; }
+
+  /* 5. Classes utilitárias de impressão */
+  .no-print { display: none !important; }
+  .print-full-height { max-height: none !important; overflow: visible !important; }
+  .print-avoid-break { page-break-inside: avoid; }
+
+  /* 6. Configura a quebra de página inteligente para tabelas */
   table {
     width: 100% !important;
+    page-break-inside: auto;
+    border-collapse: collapse;
   }
-  
-  /* Ajustar margens da página */
-  @page {
-    margin: 1cm;
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
   }
+  thead { display: table-header-group; }
+  tbody { display: table-row-group; }
 }

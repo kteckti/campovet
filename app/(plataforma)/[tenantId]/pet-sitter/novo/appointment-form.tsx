@@ -55,7 +55,7 @@ export function AppointmentForm({ tenantId, pets, services, initialData }: Appoi
   )
 
   // Calcular valores (Ida e Volta)
-  const fuelCostPerKm = 6.50 / 6 
+  const fuelCostPerKm = 6.50 / 8 
   const distance = distanceKm && !isNaN(parseFloat(distanceKm)) ? parseFloat(distanceKm) : 0
   const totalDistance = distance * 2 // Ida e Volta
   const fuelCost = totalDistance * fuelCostPerKm

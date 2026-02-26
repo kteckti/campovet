@@ -43,7 +43,8 @@ export default async function PagamentoPage() {
               Vencimento
             </div>
             <div className="text-lg font-bold text-gray-900">
-              {status.expiresAt ? status.expiresAt.toLocaleDateString('pt-BR') : 'N/A'}
+              {/* === CORREÇÃO AQUI: Envolvendo com new Date() === */}
+              {status.expiresAt ? new Date(status.expiresAt).toLocaleDateString('pt-BR') : 'N/A'}
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-gray-50">

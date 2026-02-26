@@ -42,7 +42,7 @@ export default async function FinanceiroPetSitterPage({ params }: PageProps) {
   }
 
   // Buscar todos os agendamentos
-  const appointments = await db.petSitterAppointment.findMany({
+ const appointments = await db.petSitterAppointment.findMany({
     where: { tenantId: tenant.id },
     include: {
       pet: {
@@ -52,7 +52,7 @@ export default async function FinanceiroPetSitterPage({ params }: PageProps) {
       },
       service: true
     },
-    orderBy: { date: 'desc' }
+    orderBy: { date: 'asc' } // Ordena do mais próximo para o futuro
   })
 
   // Converter Decimal para Number
