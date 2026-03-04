@@ -2,8 +2,13 @@
 
 import { db } from "@/src/lib/db"
 import { revalidatePath } from "next/cache"
+import { auth } from "@/auth"
 
 export async function createTransaction(tenantId: string, formData: FormData) {
+  const session = await auth()
+  if (!session?.user || (session.user as any).tenantSlug !== tenantId) {
+    throw new Error("Não autorizado")
+  }
   const type = formData.get("type") as string // "INCOME" ou "EXPENSE"
   const description = formData.get("description") as string
   const amountStr = formData.get("amount") as string
